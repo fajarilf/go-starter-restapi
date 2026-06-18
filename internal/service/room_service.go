@@ -38,3 +38,16 @@ func (s *RoomService) Create(ctx context.Context, req *domain.RoomCreateDto) (*d
 		Description: result.Description,
 	}, nil
 }
+
+func (s *RoomService) GetById(ctx context.Context, id int) (*domain.RoomDto, error) {
+	result, err := s.repo.GetById(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("error: %w", err)
+	}
+
+	return &domain.RoomDto{
+		Id:          result.Id,
+		Name:        result.Name,
+		Description: result.Description,
+	}, nil
+}

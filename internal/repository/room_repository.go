@@ -15,6 +15,12 @@ type RoomRepository struct {
 
 var _ service.RoomRepository = (*RoomRepository)(nil)
 
+func NewRoomRepository(db *pgxpool.Pool) *RoomRepository {
+	return &RoomRepository{
+		db: db,
+	}
+}
+
 func (r *RoomRepository) Create(ctx context.Context, entity *domain.Room) (*domain.Room, error) {
 	return nil, fmt.Errorf("Method Unimplemented")
 }
