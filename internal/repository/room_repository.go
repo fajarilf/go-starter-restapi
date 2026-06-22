@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/fajarilf/go-starter-api/internal/domain"
@@ -52,6 +53,9 @@ func (r *RoomRepository) GetById(ctx context.Context, id int) (*domain.Room, err
 
 	room, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[domain.Room])
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("Room Repository: %w", domain.ErrNotFound)
+		}
 		return nil, fmt.Errorf("Room Repository: %w", err)
 	}
 
@@ -72,6 +76,9 @@ func (r *RoomRepository) Update(ctx context.Context, entity *domain.Room) (*doma
 
 	room, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[domain.Room])
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("Room Repository: %w", domain.ErrNotFound)
+		}
 		return nil, fmt.Errorf("Room Repository: %w", err)
 	}
 
@@ -85,7 +92,7 @@ func (r *RoomRepository) Delete(ctx context.Context, id int) error {
 	}
 
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("Room Repository: room %d not found", id)
+		return fmt.Errorf("Room Repository: %w", domain.ErrNotFound)
 	}
 
 	return nil

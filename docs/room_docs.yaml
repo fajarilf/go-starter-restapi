@@ -30,11 +30,7 @@ room:
               schema:
                 $ref: "./openapi.yaml#/components/schemas/RoomListResponse"
         "500":
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: "./openapi.yaml#/components/schemas/ErrorResponse"
+          $ref: "./openapi.yaml#/components/responses/ServerError"
   post:
       tags: [Rooms]
       summary: Create a room
@@ -57,11 +53,9 @@ room:
                       status:
                         example: 201
         "400":
-          description: Invalid request body or validation error
-          content:
-            application/json:
-              schema:
-                $ref: "./openapi.yaml#/components/schemas/ErrorResponse"
+          $ref: "./openapi.yaml#/components/responses/BadRequest"
+        "500":
+          $ref: "./openapi.yaml#/components/responses/ServerError"
 
 room-by-id:
   get:
@@ -85,11 +79,11 @@ room-by-id:
               schema:
                 $ref: "./openapi.yaml#/components/schemas/RoomResponse"
         "400":
-          description: Invalid ID or room not found
-          content:
-            application/json:
-              schema:
-                $ref: "./openapi.yaml#/components/schemas/ErrorResponse"
+          $ref: "./openapi.yaml#/components/responses/BadRequest"
+        "404":
+          $ref: "./openapi.yaml#/components/responses/NotFound"
+        "500":
+          $ref: "./openapi.yaml#/components/responses/ServerError"
   put:
       tags: [Rooms]
       summary: Update a room
@@ -117,11 +111,11 @@ room-by-id:
               schema:
                 $ref: "./openapi.yaml#/components/schemas/RoomResponse"
         "400":
-          description: Invalid ID, request body, or room not found
-          content:
-            application/json:
-              schema:
-                $ref: "./openapi.yaml#/components/schemas/ErrorResponse"
+          $ref: "./openapi.yaml#/components/responses/BadRequest"
+        "404":
+          $ref: "./openapi.yaml#/components/responses/NotFound"
+        "500":
+          $ref: "./openapi.yaml#/components/responses/ServerError"
   delete:
       tags: [Rooms]
       summary: Delete a room
@@ -143,8 +137,8 @@ room-by-id:
               schema:
                 $ref: "./openapi.yaml#/components/schemas/RoomDeleteResponse"
         "400":
-          description: Invalid ID or room not found
-          content:
-            application/json:
-              schema:
-                $ref: "./openapi.yaml#/components/schemas/ErrorResponse"
+          $ref: "./openapi.yaml#/components/responses/BadRequest"
+        "404":
+          $ref: "./openapi.yaml#/components/responses/NotFound"
+        "500":
+          $ref: "./openapi.yaml#/components/responses/ServerError"

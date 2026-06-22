@@ -36,6 +36,26 @@ paths:
     $ref: "./room_docs.yaml#/room-by-id"
 
 components:
+  responses:
+    BadRequest:
+      description: Invalid request (bad path parameter, malformed body, or validation error)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
   schemas:
     RoomCreateRequest:
       type: object

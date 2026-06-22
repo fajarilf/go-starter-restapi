@@ -35,7 +35,7 @@ func (h *RoomHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	room, err := h.service.Create(r.Context(), &req)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeServiceError(w, err)
 		return
 	}
 
@@ -52,7 +52,7 @@ func (h *RoomHandler) GetById(w http.ResponseWriter, r *http.Request) {
 
 	room, err := h.service.GetById(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeServiceError(w, err)
 		return
 	}
 
@@ -78,7 +78,7 @@ func (h *RoomHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	room, err := h.service.Update(r.Context(), id, &req)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeServiceError(w, err)
 		return
 	}
 
@@ -93,7 +93,7 @@ func (h *RoomHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.Delete(r.Context(), id); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeServiceError(w, err)
 		return
 	}
 
@@ -109,7 +109,7 @@ func (h *RoomHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	rooms, err := h.service.Get(r.Context(), &param)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServiceError(w, err)
 		return
 	}
 

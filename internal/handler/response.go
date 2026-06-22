@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -49,6 +50,19 @@ func writeSuccess[T any](w http.ResponseWriter, status int, data T) {
 
 func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, domain.ErrorResponse{Error: message})
+}
+
+// writeServiceError maps an error returned by the service layer to a semantic
+// HTTP status. Known sentinel errors get specific codes; anything else is an
+// unexpected failure (500) and is logged rather than leaked to the client.
+func writeServiceError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, domain.ErrNotFound):
+		writeError(w, http.StatusNotFound, "resource not found")
+	default:
+		slog.Error("unexpected service error", "error", err)
+		writeError(w, http.StatusInternalServerError, "internal server error")
+	}
 }
 
 func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
