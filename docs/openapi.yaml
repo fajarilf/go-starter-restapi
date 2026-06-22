@@ -1,0 +1,128 @@
+openapi: 3.0.3
+info:
+  title: Go Starter REST API
+  description: |
+    REST API for the go-starter-restapi project.
+  version: 0.1.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server (PORT defaults to 8080)
+
+tags:
+  - name: Health
+    description: Service health checks
+  - name: Rooms
+    description: Room resource operations
+
+paths:
+  /api/healthz:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Returns `ok` when the service is up.
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+  /api/rooms:
+    $ref: "./room_docs.yaml#/room"
+  /api/rooms/{id}:
+    $ref: "./room_docs.yaml#/room-by-id"
+
+components:
+  schemas:
+    RoomCreateRequest:
+      type: object
+      required:
+        - name
+        - description
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 50
+          description: Room name
+          example: Conference Room A
+        description:
+          type: string
+          minLength: 1
+          description: Room description
+          example: Large room on the 3rd floor
+      additionalProperties: false
+
+    Room:
+      type: object
+      description: Room representation returned by the API.
+      properties:
+        id:
+          type: integer
+          format: int32
+          example: 1
+        name:
+          type: string
+          example: Conference Room A
+        description:
+          type: string
+          example: Large room on the 3rd floor
+
+    RoomResponse:
+      type: object
+      description: Success envelope wrapping a single room.
+      properties:
+        status:
+          type: integer
+          description: Mirrors the HTTP status code.
+          example: 200
+        data:
+          $ref: "#/components/schemas/Room"
+
+    Pagination:
+      type: object
+      description: Pagination metadata for list responses.
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        total_pages:
+          type: integer
+          example: 5
+        total:
+          type: integer
+          example: 42
+        has_prev:
+          type: boolean
+          example: false
+        has_next:
+          type: boolean
+          example: true
+
+    RoomListResponse:
+      type: object
+      description: Success envelope wrapping a paginated list of rooms.
+      properties:
+        status:
+          type: integer
+          description: Mirrors the HTTP status code.
+          example: 200
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Room"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: invalid request body
