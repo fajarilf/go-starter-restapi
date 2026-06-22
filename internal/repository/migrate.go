@@ -7,12 +7,14 @@ import (
 	"github.com/fajarilf/go-starter-api/migrations"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+
+	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 )
 
 func toPgxURL(dbURL string) string {
 	for _, prefix := range []string{"postgresql://", "postgres://"} {
-		if strings.HasPrefix(dbURL, prefix) {
-			return "pgx5://" + strings.TrimPrefix(dbURL, prefix)
+		if after, ok := strings.CutPrefix(dbURL, prefix); ok {
+			return "pgx5://" + after
 		}
 	}
 
