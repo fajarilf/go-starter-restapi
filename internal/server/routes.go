@@ -45,5 +45,7 @@ func (s *Server) registerRoutes() {
 		r.Post("/", s.roomHandler.Create)
 		r.Get("/", s.roomHandler.Get)
 		r.Get("/{id}", s.roomHandler.GetById)
+		r.Put("/{id}", s.roomHandler.Update)
+		r.Delete("/{id}", s.roomHandler.Delete)
 	})
 }

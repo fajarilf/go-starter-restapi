@@ -58,6 +58,39 @@ func (r *RoomRepository) GetById(ctx context.Context, id int) (*domain.Room, err
 	return room, nil
 }
 
+func (r *RoomRepository) Update(ctx context.Context, entity *domain.Room) (*domain.Room, error) {
+	rows, err := r.db.Query(ctx,
+		`UPDATE rooms
+		 SET name = $1, description = $2, updated_at = now()
+		 WHERE id = $3
+		 RETURNING *`,
+		entity.Name, entity.Description, entity.Id,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("Room Repository: %w", err)
+	}
+
+	room, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[domain.Room])
+	if err != nil {
+		return nil, fmt.Errorf("Room Repository: %w", err)
+	}
+
+	return room, nil
+}
+
+func (r *RoomRepository) Delete(ctx context.Context, id int) error {
+	tag, err := r.db.Exec(ctx, `DELETE FROM rooms WHERE id = $1`, id)
+	if err != nil {
+		return fmt.Errorf("Room Repository: %w", err)
+	}
+
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("Room Repository: room %d not found", id)
+	}
+
+	return nil
+}
+
 func (r *RoomRepository) Get(ctx context.Context, param *domain.PaginateRequest) ([]*domain.Room, domain.Pagination, error) {
 	offset := (param.Page - 1) * param.Limit
 

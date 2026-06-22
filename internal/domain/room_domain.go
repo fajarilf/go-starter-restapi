@@ -26,6 +26,11 @@ type RoomCreateDto struct {
 	Description string `json:"description" validate:"required,gt=0"`
 }
 
+type RoomUpdateDto struct {
+	Name        string `json:"name" validate:"required,min=3,max=50"`
+	Description string `json:"description" validate:"required,gt=0"`
+}
+
 func ToRoomDto(room *Room) *RoomDto {
 	return &RoomDto{
 		Id:          room.Id,

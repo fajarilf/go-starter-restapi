@@ -56,6 +56,25 @@ components:
           example: Large room on the 3rd floor
       additionalProperties: false
 
+    RoomUpdateRequest:
+      type: object
+      required:
+        - name
+        - description
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 50
+          description: Room name
+          example: Conference Room A
+        description:
+          type: string
+          minLength: 1
+          description: Room description
+          example: Large room on the 3rd floor
+      additionalProperties: false
+
     Room:
       type: object
       description: Room representation returned by the API.
@@ -119,6 +138,20 @@ components:
             $ref: "#/components/schemas/Room"
         pagination:
           $ref: "#/components/schemas/Pagination"
+
+    RoomDeleteResponse:
+      type: object
+      description: Success envelope returned after deleting a room.
+      properties:
+        status:
+          type: integer
+          example: 200
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: room deleted
 
     ErrorResponse:
       type: object

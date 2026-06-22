@@ -48,6 +48,27 @@ func (s *RoomService) GetById(ctx context.Context, id int) (*domain.RoomDto, err
 	}, nil
 }
 
+func (s *RoomService) Update(ctx context.Context, id int, req *domain.RoomUpdateDto) (*domain.RoomDto, error) {
+	result, err := s.repo.Update(ctx, &domain.Room{
+		Id:          id,
+		Name:        req.Name,
+		Description: req.Description,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error: %w", err)
+	}
+
+	return domain.ToRoomDto(result), nil
+}
+
+func (s *RoomService) Delete(ctx context.Context, id int) error {
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return fmt.Errorf("error: %w", err)
+	}
+
+	return nil
+}
+
 func (s *RoomService) Get(ctx context.Context, param *domain.PaginateRequest) (*domain.RoomPaginateDto, error) {
 	result, pagination, err := s.repo.Get(ctx, param)
 	if err != nil {

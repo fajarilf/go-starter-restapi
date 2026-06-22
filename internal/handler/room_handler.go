@@ -59,6 +59,47 @@ func (h *RoomHandler) GetById(w http.ResponseWriter, r *http.Request) {
 	writeSuccess(w, http.StatusOK, room)
 }
 
+func (h *RoomHandler) Update(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var req domain.RoomUpdateDto
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+
+	if err := h.validate.Struct(req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	room, err := h.service.Update(r.Context(), id, &req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeSuccess(w, http.StatusOK, room)
+}
+
+func (h *RoomHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := h.service.Delete(r.Context(), id); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeSuccess(w, http.StatusOK, map[string]string{"message": "room deleted"})
+}
+
 func (h *RoomHandler) Get(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	param := domain.PaginateRequest{
