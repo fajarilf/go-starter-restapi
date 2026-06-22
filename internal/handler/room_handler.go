@@ -33,17 +33,13 @@ func (h *RoomHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	room, err := h.service.Create(r.Context(), &domain.RoomCreateDto{
-		Name:        req.Name,
-		Description: req.Description,
-	})
-
+	room, err := h.service.Create(r.Context(), &req)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, room)
+	writeSuccess(w, http.StatusCreated, room)
 }
 
 func (h *RoomHandler) GetById(w http.ResponseWriter, r *http.Request) {
@@ -51,6 +47,7 @@ func (h *RoomHandler) GetById(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(idString)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	room, err := h.service.GetById(r.Context(), id)
@@ -59,5 +56,21 @@ func (h *RoomHandler) GetById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusFound, room)
+	writeSuccess(w, http.StatusOK, room)
+}
+
+func (h *RoomHandler) Get(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	param := domain.PaginateRequest{
+		Page:  queryInt(q, "page", 1),
+		Limit: queryInt(q, "limit", 10),
+	}
+
+	rooms, err := h.service.Get(r.Context(), &param)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writePaginate(w, http.StatusOK, rooms.Data, rooms.Pagination)
 }

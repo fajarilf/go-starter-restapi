@@ -27,6 +27,7 @@ func (s *Server) registerRoutes() {
 
 	r.Route("/api/rooms", func(r chi.Router) {
 		r.Post("/", s.roomHandler.Create)
+		r.Get("/", s.roomHandler.Get)
 		r.Get("/{id}", s.roomHandler.GetById)
 	})
 }

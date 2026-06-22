@@ -5,18 +5,14 @@ import (
 	"fmt"
 
 	"github.com/fajarilf/go-starter-api/internal/domain"
+	"github.com/fajarilf/go-starter-api/internal/repository"
 )
 
-type RoomRepository interface {
-	Create(ctx context.Context, entity *domain.Room) (*domain.Room, error)
-	GetById(ctx context.Context, id int) (*domain.Room, error)
-}
-
 type RoomService struct {
-	repo RoomRepository
+	repo repository.RoomRepositoryInterface
 }
 
-func NewRoomService(r RoomRepository) *RoomService {
+func NewRoomService(r repository.RoomRepositoryInterface) *RoomService {
 	return &RoomService{
 		repo: r,
 	}
@@ -49,5 +45,22 @@ func (s *RoomService) GetById(ctx context.Context, id int) (*domain.RoomDto, err
 		Id:          result.Id,
 		Name:        result.Name,
 		Description: result.Description,
+	}, nil
+}
+
+func (s *RoomService) Get(ctx context.Context, param *domain.PaginateRequest) (*domain.RoomPaginateDto, error) {
+	result, pagination, err := s.repo.Get(ctx, param)
+	if err != nil {
+		return nil, fmt.Errorf("error: %w", err)
+	}
+
+	rooms := make([]*domain.RoomDto, 0, len(result))
+	for _, val := range result {
+		rooms = append(rooms, domain.ToRoomDto(val))
+	}
+
+	return &domain.RoomPaginateDto{
+		Data:       rooms,
+		Pagination: pagination,
 	}, nil
 }

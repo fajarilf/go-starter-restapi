@@ -11,14 +11,19 @@ type Room struct {
 }
 
 type RoomDto struct {
-	Id          int
-	Name        string
-	Description string
+	Id          int    `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type RoomPaginateDto struct {
+	Data       []*RoomDto
+	Pagination Pagination
 }
 
 type RoomCreateDto struct {
 	Name        string `json:"name" validate:"required,min=3,max=50"`
-	Description string `json:"decription" validate:"required,gt=0"`
+	Description string `json:"description" validate:"required,gt=0"`
 }
 
 func ToRoomDto(room *Room) *RoomDto {
