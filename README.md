@@ -56,9 +56,6 @@ cp .env.example .env
 | `ENVIRONMENT`      | no       | `development` | `development` \| `staging` \| `production` |
 | `LOG_LEVEL`        | no       | `info`        | `debug` \| `info` \| `warn` \| `error` |
 
-> Note: `.env.example` currently lists `DB_MAX_CONS` — the variable the app
-> actually reads is `DB_MAX_CONNS`.
-
 ### 2. Run migrations
 
 ```sh
