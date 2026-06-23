@@ -113,3 +113,26 @@ func (s *RoomService) Get(ctx context.Context, param *domain.PaginateRequest) (*
 		Pagination: pagination,
 	}, nil
 }
+
+func (s *RoomService) Recover(ctx context.Context, id int) (*domain.RoomDto, error) {
+	room, err := s.repo.GetById(ctx, id)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return nil, domain.NewInternalError(err.Error())
+	}
+
+	if room != nil {
+		message := fmt.Sprintf("Room id: %d not deleted", id)
+		return nil, domain.NewConflictError(message)
+	}
+
+	room, err = s.repo.Recover(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, domain.NewNotFoundError(fmt.Sprintf("room id: %d not found", id))
+		}
+
+		return nil, domain.NewInternalError(err.Error())
+	}
+
+	return domain.ToRoomDto(room), nil
+}

@@ -128,3 +128,23 @@ func (r *RoomRepository) Get(ctx context.Context, param *domain.PaginateRequest)
 		HasNext:    param.Page < totalPages,
 	}, nil
 }
+
+func (r *RoomRepository) Recover(ctx context.Context, id int) (*domain.Room, error) {
+	rows, err := r.db.Query(ctx,
+		`UPDATE rooms
+		 SET deleted_at = NULL, updated_at = now()
+		 WHERE id = $1
+		 RETURNING *`,
+		id,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	room, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[domain.Room])
+	if err != nil {
+		return nil, err
+	}
+
+	return room, nil
+}

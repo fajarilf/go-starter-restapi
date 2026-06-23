@@ -102,3 +102,19 @@ func (h *RoomHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	writePaginate(w, http.StatusOK, rooms.Data, rooms.Pagination)
 }
+
+func (h *RoomHandler) Recover(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	room, err := h.service.Recover(r.Context(), id)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+
+	writeSuccess(w, http.StatusOK, room)
+}

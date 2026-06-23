@@ -29,3 +29,7 @@ func NewNotFoundError(msg string) *AppError {
 func NewInternalError(msg string) *AppError {
 	return &AppError{Kind: KindInternal, Message: msg}
 }
+
+func NewConflictError(msg string) *AppError {
+	return &AppError{Kind: KindConflict, Message: msg}
+}

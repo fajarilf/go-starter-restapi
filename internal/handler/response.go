@@ -65,6 +65,9 @@ func writeServiceError(w http.ResponseWriter, err error) {
 		case domain.KindValidation:
 			writeError(w, http.StatusBadRequest, appError.Message)
 			return
+		case domain.KindConflict:
+			writeError(w, http.StatusConflict, appError.Message)
+			return
 		}
 	}
 
