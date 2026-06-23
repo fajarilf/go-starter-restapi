@@ -142,3 +142,33 @@ room-by-id:
           $ref: "./openapi.yaml#/components/responses/NotFound"
         "500":
           $ref: "./openapi.yaml#/components/responses/ServerError"
+
+room-by-id-recover:
+  post:
+    tags: [Rooms]
+    summary: Recover a deleted room
+    operationId: recoverRoom
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Numeric room identifier
+      schema:
+        type: integer
+        format: int32
+        example: 1
+    responses:
+        "200":
+          description: Room Recovered
+          content:
+            application/json:
+              schema:
+                $ref: "./openapi.yaml#/components/schemas/RoomResponse"
+        "400":
+          $ref: "./openapi.yaml#/components/responses/BadRequest"
+        "404":
+          $ref: "./openapi.yaml#/components/responses/NotFound"
+        "409":
+          $ref: "./openapi.yaml#/components/responses/ConflictError"
+        "500":
+          $ref: "./openapi.yaml#/components/responses/ServerError"
