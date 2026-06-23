@@ -128,12 +128,31 @@ curl -X POST http://localhost:8080/api/rooms \
   -d '{"name":"Conference Room A","description":"Large room on the 3rd floor"}'
 ```
 
+## Testing
+
+Integration tests in `internal/handler` drive the real router → handler → service
+→ repository → pgx stack via `httptest` against a real Postgres. They read
+`TEST_DATABASE_URL` and **skip** when it is unset, so `go test ./...` stays green
+without a database.
+
+> The test database is migrated and `TRUNCATE`d between tests — point it at a
+> throwaway DB, never your real one.
+
+```sh
+TEST_DATABASE_URL='postgres://user:pass@localhost:5432/app_test?sslmode=disable' \
+  go test ./internal/server -v
+```
+
+`TEST_DATABASE_URL` may also be set in `.env` (it is loaded automatically). The
+suite covers health, full CRUD happy paths, validation `400`s, `404`s,
+non-numeric ids, and list pagination edges.
+
 ## Development
 
 ```sh
 go build ./...   # build everything
 go vet ./...     # static checks
-go test ./...    # run tests
+go test ./...    # run tests (integration tests skip without TEST_DATABASE_URL)
 ```
 
 ## Adding a new resource
