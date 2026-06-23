@@ -42,6 +42,9 @@ func New(cfg config.Config, roomHandler *handler.RoomHandler) *Server {
 	return s
 }
 
+// Handler returns the configured router, for integration tests.
+func (s *Server) Handler() http.Handler { return s.router }
+
 func (s *Server) Start(ctx context.Context) error {
 	serverErr := make(chan error, 1)
 	go func() {
