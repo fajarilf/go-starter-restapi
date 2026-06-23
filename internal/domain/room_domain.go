@@ -11,6 +11,7 @@ type Room struct {
 	Description string       `db:"description"`
 	CreatedAt   time.Time    `db:"created_at"`
 	UpdatedAt   sql.NullTime `db:"updated_at"`
+	DeletedAt   sql.NullTime `db:"deleted_at"`
 }
 
 type RoomDto struct {

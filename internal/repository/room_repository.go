@@ -41,8 +41,8 @@ func (r *RoomRepository) Create(ctx context.Context, entity *domain.Room) (*doma
 
 func (r *RoomRepository) GetById(ctx context.Context, id int) (*domain.Room, error) {
 	rows, err := r.db.Query(ctx,
-		`SELECT id, name, description, created_at, updated_at
-		 FROM rooms WHERE id = $1`,
+		`SELECT id, name, description, created_at, updated_at, deleted_at
+		 FROM rooms WHERE id = $1 AND deleted_at IS NULL`,
 		id,
 	)
 	if err != nil {
@@ -61,7 +61,7 @@ func (r *RoomRepository) Update(ctx context.Context, entity *domain.Room) (*doma
 	rows, err := r.db.Query(ctx,
 		`UPDATE rooms
 		 SET name = $1, description = $2, updated_at = now()
-		 WHERE id = $3
+		 WHERE id = $3 AND deleted_at IS NULL
 		 RETURNING *`,
 		entity.Name, entity.Description, entity.Id,
 	)
@@ -78,7 +78,10 @@ func (r *RoomRepository) Update(ctx context.Context, entity *domain.Room) (*doma
 }
 
 func (r *RoomRepository) Delete(ctx context.Context, id int) (int64, error) {
-	tag, err := r.db.Exec(ctx, `DELETE FROM rooms WHERE id = $1`, id)
+	tag, err := r.db.Exec(ctx,
+		`UPDATE rooms SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL`,
+		id,
+	)
 	if err != nil {
 		return tag.RowsAffected(), err
 	}
@@ -90,13 +93,14 @@ func (r *RoomRepository) Get(ctx context.Context, param *domain.PaginateRequest)
 	offset := (param.Page - 1) * param.Limit
 
 	var total int
-	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM rooms`).Scan(&total); err != nil {
+	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM rooms WHERE deleted_at IS NULL`).Scan(&total); err != nil {
 		return nil, domain.Pagination{}, err
 	}
 
 	rows, err := r.db.Query(ctx,
-		`SELECT id, name, description, created_at, updated_at
+		`SELECT id, name, description, created_at, updated_at, deleted_at
 		 FROM rooms
+		 WHERE deleted_at IS NULL
 		 ORDER BY created_at DESC
 		 LIMIT $1 OFFSET $2`,
 		param.Limit, offset,
