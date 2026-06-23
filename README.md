@@ -51,6 +51,7 @@ cp .env.example .env
 | ------------------ | -------- | ------------- | ----------- |
 | `PORT`             | no       | `8080`        | HTTP listen port |
 | `DATABASE_URL`     | **yes**  | —             | `postgres://user:pass@host:port/dbname` |
+| `TEST_DATABASE_URL`| **yes**  | —             | `postgres://user:pass@host:port/dbname_test` |
 | `DB_MAX_CONNS`     | no       | `10`          | Max pooled connections |
 | `DB_MAX_IDLE_TIME` | no       | `15m`         | Max connection idle time |
 | `ENVIRONMENT`      | no       | `development` | `development` \| `staging` \| `production` |
