@@ -48,8 +48,8 @@ func run() error {
 	}
 
 	roomRepo := repository.NewRoomRepository(pool)
-	roomService := service.NewRoomService(roomRepo)
-	roomHandler := handler.NewRoomHandler(roomService, validator.New())
+	roomService := service.NewRoomService(roomRepo, validator.New())
+	roomHandler := handler.NewRoomHandler(roomService)
 
 	srv := server.New(cfg, roomHandler)
 	return srv.Start(ctx)

@@ -7,18 +7,15 @@ import (
 	"github.com/fajarilf/go-starter-api/internal/domain"
 	"github.com/fajarilf/go-starter-api/internal/service"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-playground/validator/v10"
 )
 
 type RoomHandler struct {
-	service  *service.RoomService
-	validate *validator.Validate
+	service *service.RoomService
 }
 
-func NewRoomHandler(s *service.RoomService, v *validator.Validate) *RoomHandler {
+func NewRoomHandler(s *service.RoomService) *RoomHandler {
 	return &RoomHandler{
-		service:  s,
-		validate: v,
+		service: s,
 	}
 }
 
@@ -26,11 +23,6 @@ func (h *RoomHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req domain.RoomCreateDto
 	if !decodeJSON(w, r, &req) {
 		return // validate if request is json or not
-	}
-
-	if err := h.validate.Struct(req); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
 	}
 
 	room, err := h.service.Create(r.Context(), &req)
@@ -68,11 +60,6 @@ func (h *RoomHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	var req domain.RoomUpdateDto
 	if !decodeJSON(w, r, &req) {
-		return
-	}
-
-	if err := h.validate.Struct(req); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 

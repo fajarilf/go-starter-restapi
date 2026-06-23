@@ -2,8 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/fajarilf/go-starter-api/internal/domain"
 	"github.com/jackc/pgx/v5"
@@ -30,12 +28,12 @@ func (r *RoomRepository) Create(ctx context.Context, entity *domain.Room) (*doma
 		entity.Name, entity.Description,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("Room Repository: %w", err)
+		return nil, err
 	}
 
 	room, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[domain.Room])
 	if err != nil {
-		return nil, fmt.Errorf("Room Repository: %w", err)
+		return nil, err
 	}
 
 	return room, nil
@@ -48,15 +46,12 @@ func (r *RoomRepository) GetById(ctx context.Context, id int) (*domain.Room, err
 		id,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("Room Repository: %w", err)
+		return nil, err
 	}
 
 	room, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[domain.Room])
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, fmt.Errorf("Room Repository: %w", domain.ErrNotFound)
-		}
-		return nil, fmt.Errorf("Room Repository: %w", err)
+		return nil, err
 	}
 
 	return room, nil
@@ -71,31 +66,24 @@ func (r *RoomRepository) Update(ctx context.Context, entity *domain.Room) (*doma
 		entity.Name, entity.Description, entity.Id,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("Room Repository: %w", err)
+		return nil, err
 	}
 
 	room, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[domain.Room])
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, fmt.Errorf("Room Repository: %w", domain.ErrNotFound)
-		}
-		return nil, fmt.Errorf("Room Repository: %w", err)
+		return nil, err
 	}
 
 	return room, nil
 }
 
-func (r *RoomRepository) Delete(ctx context.Context, id int) error {
+func (r *RoomRepository) Delete(ctx context.Context, id int) (int64, error) {
 	tag, err := r.db.Exec(ctx, `DELETE FROM rooms WHERE id = $1`, id)
 	if err != nil {
-		return fmt.Errorf("Room Repository: %w", err)
+		return tag.RowsAffected(), err
 	}
 
-	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("Room Repository: %w", domain.ErrNotFound)
-	}
-
-	return nil
+	return tag.RowsAffected(), nil
 }
 
 func (r *RoomRepository) Get(ctx context.Context, param *domain.PaginateRequest) ([]*domain.Room, domain.Pagination, error) {
@@ -103,7 +91,7 @@ func (r *RoomRepository) Get(ctx context.Context, param *domain.PaginateRequest)
 
 	var total int
 	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM rooms`).Scan(&total); err != nil {
-		return nil, domain.Pagination{}, fmt.Errorf("Room Repository: %w", err)
+		return nil, domain.Pagination{}, err
 	}
 
 	rows, err := r.db.Query(ctx,
@@ -114,12 +102,12 @@ func (r *RoomRepository) Get(ctx context.Context, param *domain.PaginateRequest)
 		param.Limit, offset,
 	)
 	if err != nil {
-		return nil, domain.Pagination{}, fmt.Errorf("Room Repository: %w", err)
+		return nil, domain.Pagination{}, err
 	}
 
 	rooms, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[domain.Room])
 	if err != nil {
-		return nil, domain.Pagination{}, fmt.Errorf("Room Repository: %w", err)
+		return nil, domain.Pagination{}, err
 	}
 
 	totalPages := 0

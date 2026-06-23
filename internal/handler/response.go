@@ -56,13 +56,21 @@ func writeError(w http.ResponseWriter, status int, message string) {
 // HTTP status. Known sentinel errors get specific codes; anything else is an
 // unexpected failure (500) and is logged rather than leaked to the client.
 func writeServiceError(w http.ResponseWriter, err error) {
-	switch {
-	case errors.Is(err, domain.ErrNotFound):
-		writeError(w, http.StatusNotFound, "resource not found")
-	default:
-		slog.Error("unexpected service error", "error", err)
-		writeError(w, http.StatusInternalServerError, "internal server error")
+	var appError *domain.AppError
+	if errors.As(err, &appError) {
+		switch appError.Kind {
+		case domain.KindNotFound:
+			writeError(w, http.StatusNotFound, appError.Message)
+			return
+		case domain.KindValidation:
+			writeError(w, http.StatusBadRequest, appError.Message)
+			return
+		}
 	}
+
+	// Anything else (including KindInternal) is unexpected: log it, don't leak it.
+	slog.Error("unexpected service error", "error", err)
+	writeError(w, http.StatusInternalServerError, "internal server error")
 }
 
 func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
