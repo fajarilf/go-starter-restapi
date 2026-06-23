@@ -7,12 +7,21 @@ import (
 	"github.com/fajarilf/go-starter-api/docs"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
 func (s *Server) regiterMiddleware() {
 	r := s.router
+
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   s.cfg.AllowedOrigins,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		AllowCredentials: false,
+		MaxAge:           300, // cache preflight 5 min
+	}))
 
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Recoverer)

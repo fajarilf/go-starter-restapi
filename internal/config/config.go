@@ -8,12 +8,13 @@ import (
 )
 
 type Config struct {
-	Port          string        `env:"PORT" envDefault:"8080"`
-	DatabaseURL   string        `env:"DATABASE_URL,required"`
-	DBMaxConns    int32         `env:"DB_MAX_CONNS" envDefault:"10"`
-	DBIdleMaxTime time.Duration `env:"DB_MAX_IDLE_TIME" envDefault:"15m"`
-	Environment   string        `env:"ENVIRONMENT" envDefault:"development"`
-	LogLevel      string        `env:"LOG_LEVEL" envDefault:"info"`
+	Port           string        `env:"PORT" envDefault:"8080"`
+	DatabaseURL    string        `env:"DATABASE_URL,required"`
+	DBMaxConns     int32         `env:"DB_MAX_CONNS" envDefault:"10"`
+	DBIdleMaxTime  time.Duration `env:"DB_MAX_IDLE_TIME" envDefault:"15m"`
+	Environment    string        `env:"ENVIRONMENT" envDefault:"development"`
+	LogLevel       string        `env:"LOG_LEVEL" envDefault:"info"`
+	AllowedOrigins []string      `env:"ALLOWED_ORIGINS" envDefault:"*"`
 }
 
 func (c Config) Validate() error {
