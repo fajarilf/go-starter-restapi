@@ -256,3 +256,55 @@ func TestList(t *testing.T) {
 		}
 	})
 }
+
+func TestRecover(t *testing.T) {
+	ts, _ := setup(t)
+
+	t.Run("soft-deleted is recovered", func(t *testing.T) {
+		created := mustCreate(t, ts, "Recover Me", "desc")
+
+		if status, raw := do(t, ts, http.MethodDelete, path(created.ID), ""); status != http.StatusOK {
+			t.Fatalf("delete status = %d (body %s)", status, raw)
+		}
+
+		status, raw := do(t, ts, http.MethodPost, path(created.ID)+"/recover", "")
+		if status != http.StatusOK {
+			t.Fatalf("recover status = %d (body %s)", status, raw)
+		}
+		var got successResp
+		if err := json.Unmarshal(raw, &got); err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		if got.Data.ID != created.ID || got.Data.Name != "Recover Me" {
+			t.Errorf("unexpected: %+v", got.Data)
+		}
+
+		// reachable again afterwards
+		if status, _ := do(t, ts, http.MethodGet, path(created.ID), ""); status != http.StatusOK {
+			t.Errorf("after recover GET status = %d, want 200", status)
+		}
+	})
+
+	t.Run("already active is conflict", func(t *testing.T) {
+		created := mustCreate(t, ts, "Still Active", "desc")
+
+		status, _ := do(t, ts, http.MethodPost, path(created.ID)+"/recover", "")
+		if status != http.StatusConflict {
+			t.Errorf("status = %d, want 409", status)
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		status, _ := do(t, ts, http.MethodPost, "/api/rooms/999999/recover", "")
+		if status != http.StatusNotFound {
+			t.Errorf("status = %d, want 404", status)
+		}
+	})
+
+	t.Run("non-numeric id", func(t *testing.T) {
+		status, _ := do(t, ts, http.MethodPost, "/api/rooms/abc/recover", "")
+		if status != http.StatusBadRequest {
+			t.Errorf("status = %d, want 400", status)
+		}
+	})
+}
