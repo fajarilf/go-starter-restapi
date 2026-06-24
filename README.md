@@ -27,8 +27,9 @@ cmd/
   api/         HTTP server entrypoint
   migrate/     migration CLI (up/down/version/force)
 internal/
+  app/         dependency wiring (pool, repo, service, handler, server)
   config/      environment config loading & validation
-  domain/      entities, DTOs, response envelopes, sentinel errors
+  domain/      entities, DTOs, response envelopes, typed errors
   handler/     HTTP handlers + JSON response helpers
   repository/  data access (pgx) + migrator wiring
   server/      router, middleware, server lifecycle
@@ -54,6 +55,7 @@ cp .env.example .env
 | `TEST_DATABASE_URL`| **yes**  | —             | `postgres://user:pass@host:port/dbname_test` |
 | `DB_MAX_CONNS`     | no       | `10`          | Max pooled connections |
 | `DB_MAX_IDLE_TIME` | no       | `15m`         | Max connection idle time |
+| `ALLOWED_ORIGINS`  | no       | `*`           | Comma-separated CORS origins, e.g. `https://app.com,https://admin.app.com` |
 | `ENVIRONMENT`      | no       | `development` | `development` \| `staging` \| `production` |
 | `LOG_LEVEL`        | no       | `info`        | `debug` \| `info` \| `warn` \| `error` |
 
@@ -91,7 +93,11 @@ Base path: `/api`. Interactive docs are served from the running app:
 | `POST`   | `/api/rooms`       | Create a room |
 | `GET`    | `/api/rooms/{id}`  | Get a room by ID |
 | `PUT`    | `/api/rooms/{id}`  | Update a room |
-| `DELETE` | `/api/rooms/{id}`  | Delete a room |
+| `DELETE` | `/api/rooms/{id}`  | Soft-delete a room (sets `deleted_at`) |
+| `POST`   | `/api/rooms/{id}/recover` | Recover a soft-deleted room |
+
+Deletes are soft: rows are marked with `deleted_at` and filtered out of reads,
+and can be restored via the recover endpoint.
 
 ### Response envelopes
 
@@ -118,8 +124,9 @@ Errors return:
 ```
 
 Status codes follow HTTP semantics: `400` for invalid input/validation, `404`
-when a resource doesn't exist, `500` for unexpected failures (the underlying
-error is logged, not returned to the client).
+when a resource doesn't exist, `409` for conflicts (e.g. recovering a room that
+isn't deleted), `500` for unexpected failures (the underlying error is logged,
+not returned to the client).
 
 ### Example
 
@@ -141,12 +148,13 @@ without a database.
 
 ```sh
 TEST_DATABASE_URL='postgres://user:pass@localhost:5432/app_test?sslmode=disable' \
-  go test ./internal/server -v
+  go test ./internal/handler -v
 ```
 
 `TEST_DATABASE_URL` may also be set in `.env` (it is loaded automatically). The
-suite covers health, full CRUD happy paths, validation `400`s, `404`s,
-non-numeric ids, and list pagination edges.
+suite covers health, full CRUD happy paths, soft-delete and recover (including
+the `409` conflict and `404` cases), validation `400`s, `404`s, non-numeric ids,
+and list pagination edges.
 
 ## Development
 
