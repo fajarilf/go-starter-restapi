@@ -86,14 +86,14 @@ Base path: `/api`. Interactive docs are served from the running app:
 - **Swagger UI:** http://localhost:8080/api/docs/
 - **Raw spec:** http://localhost:8080/api/docs/openapi.yaml
 
-| Method   | Path               | Description |
-| -------- | ------------------ | ----------- |
-| `GET`    | `/api/healthz`     | Liveness check (returns `ok`) |
-| `GET`    | `/api/rooms`       | List rooms (paginated via `?page=&limit=`) |
-| `POST`   | `/api/rooms`       | Create a room |
-| `GET`    | `/api/rooms/{id}`  | Get a room by ID |
-| `PUT`    | `/api/rooms/{id}`  | Update a room |
-| `DELETE` | `/api/rooms/{id}`  | Soft-delete a room (sets `deleted_at`) |
+| Method   | Path                      | Description |
+| -------- | ------------------------- | ----------- |
+| `GET`    | `/api/healthz`            | Liveness check (returns `ok`) |
+| `GET`    | `/api/rooms`              | List rooms (paginated via `?page=&limit=`) |
+| `POST`   | `/api/rooms`              | Create a room |
+| `GET`    | `/api/rooms/{id}`         | Get a room by ID |
+| `PUT`    | `/api/rooms/{id}`         | Update a room |
+| `DELETE` | `/api/rooms/{id}`         | Soft-delete a room (sets `deleted_at`) |
 | `POST`   | `/api/rooms/{id}/recover` | Recover a soft-deleted room |
 
 Deletes are soft: rows are marked with `deleted_at` and filtered out of reads,
