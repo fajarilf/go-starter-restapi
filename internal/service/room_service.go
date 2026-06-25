@@ -48,7 +48,8 @@ func (s *RoomService) GetById(ctx context.Context, id int) (*domain.RoomDto, err
 	result, err := s.repo.GetById(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, domain.NewNotFoundError(err.Error())
+			message := fmt.Sprintf("room id: %d not found", id)
+			return nil, domain.NewNotFoundError(message)
 		}
 
 		return nil, domain.NewInternalError(err.Error())
@@ -73,7 +74,8 @@ func (s *RoomService) Update(ctx context.Context, id int, req *domain.RoomUpdate
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, domain.NewNotFoundError(err.Error())
+			message := fmt.Sprintf("room id: %d not found", id)
+			return nil, domain.NewNotFoundError(message)
 		}
 
 		return nil, domain.NewInternalError(err.Error())
@@ -100,7 +102,7 @@ func (s *RoomService) Delete(ctx context.Context, id int) error {
 func (s *RoomService) Get(ctx context.Context, param *domain.PaginateRequest) (*domain.RoomPaginateDto, error) {
 	result, pagination, err := s.repo.Get(ctx, param)
 	if err != nil {
-		return nil, fmt.Errorf("error: %w", err)
+		return nil, domain.NewInternalError(err.Error())
 	}
 
 	rooms := make([]*domain.RoomDto, 0, len(result))
@@ -128,7 +130,8 @@ func (s *RoomService) Recover(ctx context.Context, id int) (*domain.RoomDto, err
 	room, err = s.repo.Recover(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, domain.NewNotFoundError(fmt.Sprintf("room id: %d not found", id))
+			message := fmt.Sprintf("room id: %d not found", id)
+			return nil, domain.NewNotFoundError(message)
 		}
 
 		return nil, domain.NewInternalError(err.Error())
