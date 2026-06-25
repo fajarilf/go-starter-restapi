@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/fajarilf/go-starter-api/docs"
+	"github.com/fajarilf/go-starter-api/internal/handler"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -51,11 +52,11 @@ func (s *Server) registerRoutes() {
 	))
 
 	r.Route("/api/rooms", func(r chi.Router) {
-		r.Post("/", s.roomHandler.Create)
-		r.Get("/", s.roomHandler.Get)
-		r.Get("/{id}", s.roomHandler.GetById)
-		r.Put("/{id}", s.roomHandler.Update)
-		r.Delete("/{id}", s.roomHandler.Delete)
-		r.Post("/{id}/recover", s.roomHandler.Recover)
+		r.Post("/", handler.Wrap(s.roomHandler.Create))
+		r.Get("/", handler.Wrap(s.roomHandler.Get))
+		r.Get("/{id}", handler.Wrap(s.roomHandler.GetById))
+		r.Put("/{id}", handler.Wrap(s.roomHandler.Update))
+		r.Delete("/{id}", handler.Wrap(s.roomHandler.Delete))
+		r.Post("/{id}/recover", handler.Wrap(s.roomHandler.Recover))
 	})
 }

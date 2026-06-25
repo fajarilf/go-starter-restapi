@@ -76,14 +76,13 @@ func writeServiceError(w http.ResponseWriter, err error) {
 	writeError(w, http.StatusInternalServerError, "internal server error")
 }
 
-func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
+func decodeJSON(r *http.Request, dst any) error {
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 
 	if err := dec.Decode(dst); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
-		return false
+		return domain.NewValidationError("invalid request body")
 	}
 
-	return true
+	return nil
 }

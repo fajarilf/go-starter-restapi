@@ -19,75 +19,71 @@ func NewRoomHandler(s *service.RoomService) *RoomHandler {
 	}
 }
 
-func (h *RoomHandler) Create(w http.ResponseWriter, r *http.Request) {
+func (h *RoomHandler) Create(w http.ResponseWriter, r *http.Request) error {
 	var req domain.RoomCreateDto
-	if !decodeJSON(w, r, &req) {
-		return // validate if request is json or not
+	if err := decodeJSON(r, &req); err != nil {
+		return err
 	}
 
 	room, err := h.service.Create(r.Context(), &req)
 	if err != nil {
-		writeServiceError(w, err)
-		return
+		return err
 	}
 
 	writeSuccess(w, http.StatusCreated, room)
+	return nil
 }
 
-func (h *RoomHandler) GetById(w http.ResponseWriter, r *http.Request) {
-	idString := chi.URLParam(r, "id")
-	id, err := strconv.Atoi(idString)
+func (h *RoomHandler) GetById(w http.ResponseWriter, r *http.Request) error {
+	id, err := roomID(r)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
+		return err
 	}
 
 	room, err := h.service.GetById(r.Context(), id)
 	if err != nil {
-		writeServiceError(w, err)
-		return
+		return err
 	}
 
 	writeSuccess(w, http.StatusOK, room)
+	return nil
 }
 
-func (h *RoomHandler) Update(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+func (h *RoomHandler) Update(w http.ResponseWriter, r *http.Request) error {
+	id, err := roomID(r)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
+		return err
 	}
 
 	var req domain.RoomUpdateDto
-	if !decodeJSON(w, r, &req) {
-		return
+	if err := decodeJSON(r, &req); err != nil {
+		return err
 	}
 
 	room, err := h.service.Update(r.Context(), id, &req)
 	if err != nil {
-		writeServiceError(w, err)
-		return
+		return err
 	}
 
 	writeSuccess(w, http.StatusOK, room)
+	return nil
 }
 
-func (h *RoomHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+func (h *RoomHandler) Delete(w http.ResponseWriter, r *http.Request) error {
+	id, err := roomID(r)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
+		return err
 	}
 
 	if err := h.service.Delete(r.Context(), id); err != nil {
-		writeServiceError(w, err)
-		return
+		return err
 	}
 
 	writeSuccess(w, http.StatusOK, map[string]string{"message": "room deleted"})
+	return nil
 }
 
-func (h *RoomHandler) Get(w http.ResponseWriter, r *http.Request) {
+func (h *RoomHandler) Get(w http.ResponseWriter, r *http.Request) error {
 	q := r.URL.Query()
 	param := domain.PaginateRequest{
 		Page:  queryInt(q, "page", 1),
@@ -96,25 +92,34 @@ func (h *RoomHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	rooms, err := h.service.Get(r.Context(), &param)
 	if err != nil {
-		writeServiceError(w, err)
-		return
+		return err
 	}
 
 	writePaginate(w, http.StatusOK, rooms.Data, rooms.Pagination)
+	return nil
 }
 
-func (h *RoomHandler) Recover(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+func (h *RoomHandler) Recover(w http.ResponseWriter, r *http.Request) error {
+	id, err := roomID(r)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
+		return err
 	}
 
 	room, err := h.service.Recover(r.Context(), id)
 	if err != nil {
-		writeServiceError(w, err)
-		return
+		return err
 	}
 
 	writeSuccess(w, http.StatusOK, room)
+	return nil
+}
+
+// roomID parses the {id} path param, returning a validation error on a
+// non-numeric value so Wrap maps it to a 400.
+func roomID(r *http.Request) (int, error) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		return 0, domain.NewValidationError("invalid id")
+	}
+	return id, nil
 }
