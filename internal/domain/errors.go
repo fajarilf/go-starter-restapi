@@ -1,5 +1,12 @@
 package domain
 
+import (
+	"errors"
+	"fmt"
+
+	"github.com/jackc/pgx/v5"
+)
+
 type Kind int
 
 const (
@@ -32,4 +39,14 @@ func NewInternalError(msg string) *AppError {
 
 func NewConflictError(msg string) *AppError {
 	return &AppError{Kind: KindConflict, Message: msg}
+}
+
+func MapDBError(err error, message string) error {
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return NewNotFoundError(message)
+	default:
+		internalMsg := fmt.Sprintf("internal server error: %v", err.Error())
+		return NewInternalError(internalMsg)
+	}
 }

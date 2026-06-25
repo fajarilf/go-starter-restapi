@@ -47,12 +47,8 @@ func (s *RoomService) Create(ctx context.Context, req *domain.RoomCreateDto) (*d
 func (s *RoomService) GetById(ctx context.Context, id int) (*domain.RoomDto, error) {
 	result, err := s.repo.GetById(ctx, id)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			message := fmt.Sprintf("room id: %d not found", id)
-			return nil, domain.NewNotFoundError(message)
-		}
-
-		return nil, domain.NewInternalError(err.Error())
+		message := fmt.Sprintf("room id: %d not found", id)
+		return nil, domain.MapDBError(err, message)
 	}
 
 	return &domain.RoomDto{
@@ -73,12 +69,8 @@ func (s *RoomService) Update(ctx context.Context, id int, req *domain.RoomUpdate
 		Description: req.Description,
 	})
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			message := fmt.Sprintf("room id: %d not found", id)
-			return nil, domain.NewNotFoundError(message)
-		}
-
-		return nil, domain.NewInternalError(err.Error())
+		message := fmt.Sprintf("room id: %d not found", id)
+		return nil, domain.MapDBError(err, message)
 	}
 
 	return domain.ToRoomDto(result), nil
@@ -129,12 +121,8 @@ func (s *RoomService) Recover(ctx context.Context, id int) (*domain.RoomDto, err
 
 	room, err = s.repo.Recover(ctx, id)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			message := fmt.Sprintf("room id: %d not found", id)
-			return nil, domain.NewNotFoundError(message)
-		}
-
-		return nil, domain.NewInternalError(err.Error())
+		message := fmt.Sprintf("room id: %d not found", id)
+		return nil, domain.MapDBError(err, message)
 	}
 
 	return domain.ToRoomDto(room), nil
