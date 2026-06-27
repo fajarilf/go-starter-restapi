@@ -62,7 +62,9 @@ func setup(t *testing.T) (*httptest.Server, *pgxpool.Pool) {
 	repo := repository.NewRoomRepository(pool)
 	svc := service.NewRoomService(repo, validator.New())
 	h := handler.NewRoomHandler(svc)
-	srv := server.New(config.Config{Port: "0"}, h)
+	authSvc := service.NewAuthService(pool, config.Config{JWTSecret: "test-secret", JWTExpiryHours: 1})
+	authH := handler.NewAuthHandler(authSvc)
+	srv := server.New(config.Config{Port: "0"}, h, authH, authSvc)
 
 	ts := httptest.NewServer(srv.Handler())
 	t.Cleanup(func() {
@@ -75,6 +77,10 @@ func setup(t *testing.T) (*httptest.Server, *pgxpool.Pool) {
 
 // do performs an HTTP request and returns the status code and raw body.
 func do(t *testing.T, ts *httptest.Server, method, path, body string) (int, []byte) {
+	return doReq(t, ts, method, path, body, "")
+}
+
+func doReq(t *testing.T, ts *httptest.Server, method, path, body, token string) (int, []byte) {
 	t.Helper()
 
 	var reader io.Reader
@@ -89,6 +95,9 @@ func do(t *testing.T, ts *httptest.Server, method, path, body string) (int, []by
 	if body != "" {
 		req.Header.Set("Content-Type", "application/json")
 	}
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
 
 	resp, err := ts.Client().Do(req)
 	if err != nil {
@@ -102,6 +111,27 @@ func do(t *testing.T, ts *httptest.Server, method, path, body string) (int, []by
 	}
 
 	return resp.StatusCode, raw
+}
+
+// mustLogin authenticates as admin and returns a JWT token.
+func mustLogin(t *testing.T, ts *httptest.Server) string {
+	t.Helper()
+
+	status, raw := do(t, ts, http.MethodPost, "/api/login",
+		`{"username":"admin","password":"admin123"}`)
+	if status != http.StatusOK {
+		t.Fatalf("login status = %d, body = %s", status, raw)
+	}
+
+	var resp struct {
+		Data struct {
+			Token string `json:"token"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(raw, &resp); err != nil {
+		t.Fatalf("login unmarshal: %v (body %s)", err, raw)
+	}
+	return resp.Data.Token
 }
 
 // mustCreate creates a valid room and returns its decoded data.
