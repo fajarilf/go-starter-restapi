@@ -9,6 +9,7 @@ import (
 
 	"github.com/fajarilf/go-starter-api/internal/config"
 	"github.com/fajarilf/go-starter-api/internal/handler"
+	"github.com/fajarilf/go-starter-api/internal/service"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -17,15 +18,19 @@ type Server struct {
 	router      *chi.Mux
 	httpServer  *http.Server
 	roomHandler *handler.RoomHandler
+	authHandler *handler.AuthHandler
+	authService *service.AuthService
 }
 
-func New(cfg config.Config, roomHandler *handler.RoomHandler) *Server {
+func New(cfg config.Config, roomHandler *handler.RoomHandler, authHandler *handler.AuthHandler, authService *service.AuthService) *Server {
 	r := chi.NewRouter()
 
 	s := &Server{
 		cfg:         cfg,
 		router:      r,
 		roomHandler: roomHandler,
+		authHandler: authHandler,
+		authService: authService,
 	}
 
 	s.regiterMiddleware()

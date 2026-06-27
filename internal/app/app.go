@@ -34,7 +34,10 @@ func NewApp(ctx context.Context, cfg config.Config) (*App, error) {
 	roomService := service.NewRoomService(roomRepo, v)
 	roomHandler := handler.NewRoomHandler(roomService)
 
-	srv := server.New(cfg, roomHandler)
+	authService := service.NewAuthService(pool, cfg)
+	authHandler := handler.NewAuthHandler(authService)
+
+	srv := server.New(cfg, roomHandler, authHandler, authService)
 	return &App{Server: srv, pool: pool}, nil
 }
 

@@ -15,6 +15,8 @@ type Config struct {
 	Environment    string        `env:"ENVIRONMENT" envDefault:"development"`
 	LogLevel       string        `env:"LOG_LEVEL" envDefault:"info"`
 	AllowedOrigins []string      `env:"ALLOWED_ORIGINS" envDefault:"*"`
+	JWTSecret      string        `env:"JWT_SECRET,required"`
+	JWTExpiryHours int           `env:"JWT_EXPIRY_HOURS" envDefault:"24"`
 }
 
 func (c Config) Validate() error {
