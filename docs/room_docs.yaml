@@ -1,3 +1,43 @@
+login:
+  post:
+    tags: [Auth]
+    summary: Login
+    description: Authenticate and get a JWT token.
+    operationId: login
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "./openapi.yaml#/components/schemas/LoginRequest"
+    responses:
+      "200":
+        description: Authentication successful
+        content:
+          application/json:
+            schema:
+              $ref: "./openapi.yaml#/components/schemas/LoginResponse"
+      "400":
+        $ref: "./openapi.yaml#/components/responses/BadRequest"
+      "500":
+        $ref: "./openapi.yaml#/components/responses/ServerError"
+
+logout:
+  post:
+    tags: [Auth]
+    security:
+      - BearerAuth: []
+    summary: Logout
+    description: Revoke the current JWT token. Subsequent requests with this token will be rejected until server restart.
+    operationId: logout
+    responses:
+      "200":
+        description: Logged out successfully
+      "401":
+        $ref: "./openapi.yaml#/components/responses/Unauthorized"
+      "500":
+        $ref: "./openapi.yaml#/components/responses/ServerError"
+
 room:
   get:
       tags: [Rooms]
@@ -146,6 +186,8 @@ room-by-id:
 room-by-id-recover:
   post:
     tags: [Rooms]
+    security:
+      - BearerAuth: []
     summary: Recover a deleted room
     operationId: recoverRoom
     parameters:
@@ -166,6 +208,8 @@ room-by-id-recover:
                 $ref: "./openapi.yaml#/components/schemas/RoomResponse"
         "400":
           $ref: "./openapi.yaml#/components/responses/BadRequest"
+        "401":
+          $ref: "./openapi.yaml#/components/responses/Unauthorized"
         "404":
           $ref: "./openapi.yaml#/components/responses/NotFound"
         "409":

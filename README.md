@@ -58,6 +58,8 @@ cp .env.example .env
 | `ALLOWED_ORIGINS`  | no       | `*`           | Comma-separated CORS origins, e.g. `https://app.com,https://admin.app.com` |
 | `ENVIRONMENT`      | no       | `development` | `development` \| `staging` \| `production` |
 | `LOG_LEVEL`        | no       | `info`        | `debug` \| `info` \| `warn` \| `error` |
+| `JWT_SECRET`       | **yes**  | —             | Secret key for signing JWT tokens |
+| `JWT_EXPIRY_HOURS` | no       | `24`          | Token expiry time in hours |
 
 ### 2. Run migrations
 
@@ -89,15 +91,40 @@ Base path: `/api`. Interactive docs are served from the running app:
 | Method   | Path                      | Description |
 | -------- | ------------------------- | ----------- |
 | `GET`    | `/api/healthz`            | Liveness check (returns `ok`) |
+| `POST`   | `/api/login`              | Login, returns JWT token |
+| `POST`   | `/api/logout`             | 🔒 Revoke current JWT token |
 | `GET`    | `/api/rooms`              | List rooms (paginated via `?page=&limit=`) |
 | `POST`   | `/api/rooms`              | Create a room |
 | `GET`    | `/api/rooms/{id}`         | Get a room by ID |
 | `PUT`    | `/api/rooms/{id}`         | Update a room |
 | `DELETE` | `/api/rooms/{id}`         | Soft-delete a room (sets `deleted_at`) |
-| `POST`   | `/api/rooms/{id}/recover` | Recover a soft-deleted room |
+| `POST`   | `/api/rooms/{id}/recover` | 🔒 Recover a soft-deleted room |
 
 Deletes are soft: rows are marked with `deleted_at` and filtered out of reads,
 and can be restored via the recover endpoint.
+
+### Authentication
+
+Endpoints marked 🔒 require a JWT bearer token. Obtain one via `/api/login` (default
+credentials: `admin` / `admin123`):
+
+```sh
+TOKEN=$(curl -s -X POST http://localhost:8080/api/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"admin123"}' | jq -r '.data.token')
+
+curl -X POST "http://localhost:8080/api/rooms/1/recover" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Revoke a token via `/api/logout`:
+
+```sh
+curl -X POST http://localhost:8080/api/logout \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Blacklist is in-memory (lost on restart).
 
 ### Response envelopes
 

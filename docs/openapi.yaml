@@ -12,6 +12,8 @@ servers:
 tags:
   - name: Health
     description: Service health checks
+  - name: Auth
+    description: Authentication
   - name: Rooms
     description: Room resource operations
 
@@ -34,6 +36,10 @@ paths:
     $ref: "./room_docs.yaml#/room"
   /api/rooms/{id}:
     $ref: "./room_docs.yaml#/room-by-id"
+  /api/login:
+    $ref: "./room_docs.yaml#/login"
+  /api/logout:
+    $ref: "./room_docs.yaml#/logout"
   /api/rooms/{id}/recover:
     $ref: "./room_docs.yaml#/room-by-id-recover"
 
@@ -57,6 +63,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
     ServerError:
       description: Internal server error
       content:
@@ -64,7 +76,44 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
 
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from POST /api/login
+
   schemas:
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: Username
+          example: admin
+        password:
+          type: string
+          description: Password
+          example: admin123
+      additionalProperties: false
+
+    LoginResponse:
+      type: object
+      description: Success envelope wrapping a JWT token.
+      properties:
+        status:
+          type: integer
+          example: 200
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+              example: eyJhbGciOiJIUzI1NiIs...
+
     RoomCreateRequest:
       type: object
       required:
