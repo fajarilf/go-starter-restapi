@@ -6,6 +6,7 @@ const (
 	KindValidation = iota
 	KindNotFound
 	KindConflict
+	KindUnauthorized
 	KindInternal
 )
 
@@ -32,4 +33,8 @@ func NewInternalError(msg string) *AppError {
 
 func NewConflictError(msg string) *AppError {
 	return &AppError{Kind: KindConflict, Message: msg}
+}
+
+func NewUnauthorizedError(msg string) *AppError {
+	return &AppError{Kind: KindUnauthorized, Message: msg}
 }

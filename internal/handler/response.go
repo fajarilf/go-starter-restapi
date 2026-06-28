@@ -68,6 +68,9 @@ func writeServiceError(w http.ResponseWriter, err error) {
 		case domain.KindConflict:
 			writeError(w, http.StatusConflict, appError.Message)
 			return
+		case domain.KindUnauthorized:
+			writeError(w, http.StatusUnauthorized, appError.Message)
+			return
 		}
 	}
 

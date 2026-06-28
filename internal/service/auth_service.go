@@ -2,27 +2,32 @@ package service
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
 
 	"github.com/fajarilf/go-starter-api/internal/config"
 	"github.com/fajarilf/go-starter-api/internal/domain"
+	"github.com/fajarilf/go-starter-api/internal/repository"
+	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // ponytail: in-memory blacklist, lost on restart. Replace with Redis/DB table
 // if persistent revocation is needed.
 type AuthService struct {
-	db        *pgxpool.Pool
+	userRepo  repository.UserRepositoryInterface
 	cfg       config.Config
+	validate  *validator.Validate
 	blacklist sync.Map // map[string]bool — jti → revoked
 }
 
-func NewAuthService(db *pgxpool.Pool, cfg config.Config) *AuthService {
-	return &AuthService{db: db, cfg: cfg}
+func NewAuthService(userRepo repository.UserRepositoryInterface, v *validator.Validate, cfg config.Config) *AuthService {
+	return &AuthService{userRepo: userRepo, cfg: cfg, validate: v}
 }
 
 // IsRevoked returns true if the jti has been logged out.
@@ -31,22 +36,49 @@ func (s *AuthService) IsRevoked(jti string) bool {
 	return ok
 }
 
-func (s *AuthService) Login(ctx context.Context, username, password string) (string, error) {
-	var id int
-	var hash string
-	err := s.db.QueryRow(ctx,
-		`SELECT id, password_hash FROM users WHERE username = $1`, username,
-	).Scan(&id, &hash)
-	if err != nil {
-		return "", domain.ErrInvalidCredentials
+func (s *AuthService) Register(ctx context.Context, username, password string) (*domain.RegisterResponse, error) {
+	req := domain.RegisterRequest{Username: username, Password: password}
+	if err := s.validate.Struct(req); err != nil {
+		return nil, domain.NewValidationError(err.Error())
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)); err != nil {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, domain.NewInternalError("failed to hash password")
+	}
+
+	user, err := s.userRepo.Create(ctx, username, string(hash))
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return nil, domain.ErrUsernameTaken
+		}
+		return nil, domain.NewInternalError(err.Error())
+	}
+
+	return &domain.RegisterResponse{ID: user.ID, Username: user.Username}, nil
+}
+
+func (s *AuthService) Login(ctx context.Context, username, password string) (string, error) {
+	req := domain.LoginRequest{Username: username, Password: password}
+	if err := s.validate.Struct(req); err != nil {
+		return "", domain.NewValidationError(err.Error())
+	}
+
+	user, err := s.userRepo.FindByUsername(ctx, username)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", domain.ErrInvalidCredentials
+		}
+		return "", domain.NewInternalError(err.Error())
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return "", domain.ErrInvalidCredentials
 	}
 
 	claims := domain.JWTClaims{
-		UserID:   id,
+		UserID:   user.ID,
 		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        uuid.NewString(),

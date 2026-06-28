@@ -16,6 +16,21 @@ func NewAuthHandler(svc *service.AuthService) *AuthHandler {
 	return &AuthHandler{svc: svc}
 }
 
+func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) error {
+	var req domain.RegisterRequest
+	if err := decodeJSON(r, &req); err != nil {
+		return err
+	}
+
+	user, err := h.svc.Register(r.Context(), req.Username, req.Password)
+	if err != nil {
+		return err
+	}
+
+	writeSuccess(w, http.StatusCreated, user)
+	return nil
+}
+
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) error {
 	var req domain.LoginRequest
 	if err := decodeJSON(r, &req); err != nil {

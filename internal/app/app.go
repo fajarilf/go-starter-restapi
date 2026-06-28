@@ -34,7 +34,8 @@ func NewApp(ctx context.Context, cfg config.Config) (*App, error) {
 	roomService := service.NewRoomService(roomRepo, v)
 	roomHandler := handler.NewRoomHandler(roomService)
 
-	authService := service.NewAuthService(pool, cfg)
+	userRepo := repository.NewUserRepository(pool)
+	authService := service.NewAuthService(userRepo, v, cfg)
 	authHandler := handler.NewAuthHandler(authService)
 
 	srv := server.New(cfg, roomHandler, authHandler, authService)

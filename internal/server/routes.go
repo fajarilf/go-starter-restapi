@@ -39,6 +39,7 @@ func (s *Server) registerRoutes() {
 	})
 
 	// Auth
+	r.Post("/api/register", handler.Wrap(s.authHandler.Register))
 	r.Post("/api/login", handler.Wrap(s.authHandler.Login))
 	r.Post("/api/logout", handler.Wrap(s.authHandler.Logout))
 
