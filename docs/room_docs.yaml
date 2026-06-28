@@ -38,6 +38,32 @@ logout:
       "500":
         $ref: "./openapi.yaml#/components/responses/ServerError"
 
+register:
+  post:
+    tags: [Auth]
+    summary: Register
+    description: Create a new user account.
+    operationId: register
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "./openapi.yaml#/components/schemas/RegisterRequest"
+    responses:
+      "201":
+        description: User created
+        content:
+          application/json:
+            schema:
+              $ref: "./openapi.yaml#/components/schemas/RegisterResponse"
+      "400":
+        $ref: "./openapi.yaml#/components/responses/BadRequest"
+      "409":
+        $ref: "./openapi.yaml#/components/responses/ConflictError"
+      "500":
+        $ref: "./openapi.yaml#/components/responses/ServerError"
+
 room:
   get:
       tags: [Rooms]

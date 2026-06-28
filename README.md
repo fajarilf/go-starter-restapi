@@ -91,6 +91,7 @@ Base path: `/api`. Interactive docs are served from the running app:
 | Method   | Path                      | Description |
 | -------- | ------------------------- | ----------- |
 | `GET`    | `/api/healthz`            | Liveness check (returns `ok`) |
+| `POST`   | `/api/register`           | Register a new user |
 | `POST`   | `/api/login`              | Login, returns JWT token |
 | `POST`   | `/api/logout`             | 🔒 Revoke current JWT token |
 | `GET`    | `/api/rooms`              | List rooms (paginated via `?page=&limit=`) |
@@ -105,10 +106,16 @@ and can be restored via the recover endpoint.
 
 ### Authentication
 
-Endpoints marked 🔒 require a JWT bearer token. Obtain one via `/api/login` (default
-credentials: `admin` / `admin123`):
+Register a new user, then log in. A default admin user (`admin` / `admin123`)
+is seeded by the migration.
 
 ```sh
+# Register
+curl -X POST http://localhost:8080/api/register \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"alice","password":"secret123"}'
+
+# Login
 TOKEN=$(curl -s -X POST http://localhost:8080/api/login \
   -H 'Content-Type: application/json' \
   -d '{"username":"admin","password":"admin123"}' | jq -r '.data.token')
@@ -150,9 +157,10 @@ Errors return:
 { "error": "resource not found" }
 ```
 
-Status codes follow HTTP semantics: `400` for invalid input/validation, `404`
-when a resource doesn't exist, `409` for conflicts (e.g. recovering a room that
-isn't deleted), `500` for unexpected failures (the underlying error is logged,
+Status codes follow HTTP semantics: `400` for invalid input/validation, `401`
+for missing or invalid authentication, `404` when a resource doesn't exist,
+`409` for conflicts (e.g. duplicate username, recovering a room that isn't
+deleted), `500` for unexpected failures (the underlying error is logged,
 not returned to the client).
 
 ### Example

@@ -38,6 +38,8 @@ paths:
     $ref: "./room_docs.yaml#/room-by-id"
   /api/login:
     $ref: "./room_docs.yaml#/login"
+  /api/register:
+    $ref: "./room_docs.yaml#/register"
   /api/logout:
     $ref: "./room_docs.yaml#/logout"
   /api/rooms/{id}/recover:
@@ -113,6 +115,42 @@ components:
             token:
               type: string
               example: eyJhbGciOiJIUzI1NiIs...
+
+    RegisterRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          description: Desired username
+          example: alice
+        password:
+          type: string
+          minLength: 6
+          description: Password
+          example: secret123
+      additionalProperties: false
+
+    RegisterResponse:
+      type: object
+      description: Success envelope wrapping a newly created user.
+      properties:
+        status:
+          type: integer
+          example: 201
+        data:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 2
+            username:
+              type: string
+              example: alice
 
     RoomCreateRequest:
       type: object
