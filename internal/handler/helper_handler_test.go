@@ -55,14 +55,19 @@ func setup(t *testing.T) (*httptest.Server, *pgxpool.Pool) {
 		t.Fatalf("pool: %v", err)
 	}
 
-	if _, err := pool.Exec(context.Background(), "TRUNCATE rooms RESTART IDENTITY"); err != nil {
+	if _, err := pool.Exec(context.Background(), "TRUNCATE rooms, users RESTART IDENTITY CASCADE"); err != nil {
 		t.Fatalf("truncate: %v", err)
+	}
+	if _, err := pool.Exec(context.Background(),
+		`INSERT INTO users (username, password_hash) VALUES ('admin', '$2a$10$3yQmNm0U93S.tWlm3nf7NuPki4JMX9ZN3zo.EE4hpbL.edqg57Cta')`); err != nil {
+		t.Fatalf("seed admin: %v", err)
 	}
 
 	repo := repository.NewRoomRepository(pool)
 	svc := service.NewRoomService(repo, validator.New())
 	h := handler.NewRoomHandler(svc)
-	authSvc := service.NewAuthService(pool, config.Config{JWTSecret: "test-secret", JWTExpiryHours: 1})
+	userRepo := repository.NewUserRepository(pool)
+	authSvc := service.NewAuthService(userRepo, validator.New(), config.Config{JWTSecret: "test-secret", JWTExpiryHours: 1})
 	authH := handler.NewAuthHandler(authSvc)
 	srv := server.New(config.Config{Port: "0"}, h, authH, authSvc)
 
