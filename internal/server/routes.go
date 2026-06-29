@@ -38,6 +38,11 @@ func (s *Server) registerRoutes() {
 		w.Write([]byte("ok"))
 	})
 
+	// Auth
+	r.Post("/api/register", handler.Wrap(s.authHandler.Register))
+	r.Post("/api/login", handler.Wrap(s.authHandler.Login))
+	r.Post("/api/logout", handler.Wrap(s.authHandler.Logout))
+
 	// Raw OpenAPI spec files (embedded at build time). Serving the whole
 	// embedded FS means openapi.yaml and any file it $refs (room_docs.yaml)
 	// are reachable for the resolver.
@@ -57,6 +62,6 @@ func (s *Server) registerRoutes() {
 		r.Get("/{id}", handler.Wrap(s.roomHandler.GetById))
 		r.Put("/{id}", handler.Wrap(s.roomHandler.Update))
 		r.Delete("/{id}", handler.Wrap(s.roomHandler.Delete))
-		r.Post("/{id}/recover", handler.Wrap(s.roomHandler.Recover))
+		r.With(RequireAuth(s.authService)).Post("/{id}/recover", handler.Wrap(s.roomHandler.Recover))
 	})
 }

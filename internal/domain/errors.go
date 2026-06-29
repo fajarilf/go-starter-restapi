@@ -13,6 +13,7 @@ const (
 	KindValidation = iota
 	KindNotFound
 	KindConflict
+	KindUnauthorized
 	KindInternal
 )
 
@@ -49,4 +50,8 @@ func MapDBError(err error, message string) error {
 		internalMsg := fmt.Sprintf("internal server error: %v", err.Error())
 		return NewInternalError(internalMsg)
 	}
+}
+
+func NewUnauthorizedError(msg string) *AppError {
+	return &AppError{Kind: KindUnauthorized, Message: msg}
 }

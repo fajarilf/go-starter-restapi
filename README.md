@@ -58,6 +58,8 @@ cp .env.example .env
 | `ALLOWED_ORIGINS`  | no       | `*`           | Comma-separated CORS origins, e.g. `https://app.com,https://admin.app.com` |
 | `ENVIRONMENT`      | no       | `development` | `development` \| `staging` \| `production` |
 | `LOG_LEVEL`        | no       | `info`        | `debug` \| `info` \| `warn` \| `error` |
+| `JWT_SECRET`       | **yes**  | —             | Secret key for signing JWT tokens |
+| `JWT_EXPIRY_HOURS` | no       | `24`          | Token expiry time in hours |
 
 ### 2. Run migrations
 
@@ -89,15 +91,47 @@ Base path: `/api`. Interactive docs are served from the running app:
 | Method   | Path                      | Description |
 | -------- | ------------------------- | ----------- |
 | `GET`    | `/api/healthz`            | Liveness check (returns `ok`) |
+| `POST`   | `/api/register`           | Register a new user |
+| `POST`   | `/api/login`              | Login, returns JWT token |
+| `POST`   | `/api/logout`             | 🔒 Revoke current JWT token |
 | `GET`    | `/api/rooms`              | List rooms (paginated via `?page=&limit=`) |
 | `POST`   | `/api/rooms`              | Create a room |
 | `GET`    | `/api/rooms/{id}`         | Get a room by ID |
 | `PUT`    | `/api/rooms/{id}`         | Update a room |
 | `DELETE` | `/api/rooms/{id}`         | Soft-delete a room (sets `deleted_at`) |
-| `POST`   | `/api/rooms/{id}/recover` | Recover a soft-deleted room |
+| `POST`   | `/api/rooms/{id}/recover` | 🔒 Recover a soft-deleted room |
 
 Deletes are soft: rows are marked with `deleted_at` and filtered out of reads,
 and can be restored via the recover endpoint.
+
+### Authentication
+
+Register a new user, then log in. A default admin user (`admin` / `admin123`)
+is seeded by the migration.
+
+```sh
+# Register
+curl -X POST http://localhost:8080/api/register \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"alice","password":"secret123"}'
+
+# Login
+TOKEN=$(curl -s -X POST http://localhost:8080/api/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"admin123"}' | jq -r '.data.token')
+
+curl -X POST "http://localhost:8080/api/rooms/1/recover" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Revoke a token via `/api/logout`:
+
+```sh
+curl -X POST http://localhost:8080/api/logout \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Blacklist is in-memory (lost on restart).
 
 ### Response envelopes
 
@@ -123,9 +157,10 @@ Errors return:
 { "error": "resource not found" }
 ```
 
-Status codes follow HTTP semantics: `400` for invalid input/validation, `404`
-when a resource doesn't exist, `409` for conflicts (e.g. recovering a room that
-isn't deleted), `500` for unexpected failures (the underlying error is logged,
+Status codes follow HTTP semantics: `400` for invalid input/validation, `401`
+for missing or invalid authentication, `404` when a resource doesn't exist,
+`409` for conflicts (e.g. duplicate username, recovering a room that isn't
+deleted), `500` for unexpected failures (the underlying error is logged,
 not returned to the client).
 
 ### Example
