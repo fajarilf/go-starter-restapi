@@ -91,7 +91,7 @@ func (s *RoomService) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-func (s *RoomService) Get(ctx context.Context, param *domain.PaginateRequest) (*domain.RoomPaginateDto, error) {
+func (s *RoomService) Get(ctx context.Context, param *domain.PaginateRequest) (*domain.RoomPaginateDto[domain.Pagination], error) {
 	result, pagination, err := s.repo.Get(ctx, param)
 	if err != nil {
 		return nil, domain.NewInternalError(err.Error())
@@ -102,13 +102,13 @@ func (s *RoomService) Get(ctx context.Context, param *domain.PaginateRequest) (*
 		rooms = append(rooms, domain.ToRoomDto(val))
 	}
 
-	return &domain.RoomPaginateDto{
+	return &domain.RoomPaginateDto[domain.Pagination]{
 		Data:       rooms,
 		Pagination: pagination,
 	}, nil
 }
 
-func (s *RoomService) GetByCursor(ctx context.Context, param *domain.CursorPaginateRequest) (*domain.RoomCursorPaginateDto, error) {
+func (s *RoomService) GetByCursor(ctx context.Context, param *domain.CursorPaginateRequest) (*domain.RoomPaginateDto[domain.CursorPagination], error) {
 	result, pagination, err := s.repo.GetByCursor(ctx, param)
 	if err != nil {
 		return nil, domain.NewInternalError(err.Error())
@@ -119,7 +119,7 @@ func (s *RoomService) GetByCursor(ctx context.Context, param *domain.CursorPagin
 		rooms = append(rooms, domain.ToRoomDto(val))
 	}
 
-	return &domain.RoomCursorPaginateDto{
+	return &domain.RoomPaginateDto[domain.CursorPagination]{
 		Data:       rooms,
 		Pagination: pagination,
 	}, nil

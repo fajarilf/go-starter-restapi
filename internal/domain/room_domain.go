@@ -20,19 +20,14 @@ type RoomDto struct {
 	Description string `json:"description"`
 }
 
-type RoomPaginateDto struct {
+type RoomPaginateDto[T any] struct {
 	Data       []*RoomDto
-	Pagination Pagination
+	Pagination T
 }
 
 type CursorPaginateRequest struct {
 	Cursor int
 	Limit  int
-}
-
-type RoomCursorPaginateDto struct {
-	Data       []*RoomDto
-	Pagination CursorPagination
 }
 
 type RoomCreateDto struct {
