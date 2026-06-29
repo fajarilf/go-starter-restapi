@@ -59,6 +59,7 @@ func (s *Server) registerRoutes() {
 	r.Route("/api/rooms", func(r chi.Router) {
 		r.Post("/", handler.Wrap(s.roomHandler.Create))
 		r.Get("/", handler.Wrap(s.roomHandler.Get))
+		r.Get("/cursor", handler.Wrap(s.roomHandler.GetByCursor))
 		r.Get("/{id}", handler.Wrap(s.roomHandler.GetById))
 		r.Put("/{id}", handler.Wrap(s.roomHandler.Update))
 		r.Delete("/{id}", handler.Wrap(s.roomHandler.Delete))

@@ -25,6 +25,16 @@ type RoomPaginateDto struct {
 	Pagination Pagination
 }
 
+type CursorPaginateRequest struct {
+	Cursor int
+	Limit  int
+}
+
+type RoomCursorPaginateDto struct {
+	Data       []*RoomDto
+	Pagination CursorPagination
+}
+
 type RoomCreateDto struct {
 	Name        string `json:"name" validate:"required,min=3,max=50"`
 	Description string `json:"description" validate:"required,gt=0"`

@@ -129,6 +129,42 @@ func (r *RoomRepository) Get(ctx context.Context, param *domain.PaginateRequest)
 	}, nil
 }
 
+func (r *RoomRepository) GetByCursor(ctx context.Context, param *domain.CursorPaginateRequest) ([]*domain.Room, domain.CursorPagination, error) {
+	rows, err := r.db.Query(ctx,
+		`SELECT id, name, description, created_at, updated_at, deleted_at
+		 FROM rooms
+		 WHERE deleted_at IS NULL AND id < $1
+		 ORDER BY id DESC
+		 LIMIT $2`,
+		param.Cursor, param.Limit+1,
+	)
+	if err != nil {
+		return nil, domain.CursorPagination{}, err
+	}
+
+	rooms, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[domain.Room])
+	if err != nil {
+		return nil, domain.CursorPagination{}, err
+	}
+
+	hasNext := len(rooms) > param.Limit
+	if hasNext {
+		rooms = rooms[:param.Limit]
+	}
+
+	var nextCursor *int
+	if hasNext && len(rooms) > 0 {
+		last := rooms[len(rooms)-1]
+		nextCursor = &last.Id
+	}
+
+	return rooms, domain.CursorPagination{
+		NextCursor: nextCursor,
+		HasNext:    hasNext,
+		Limit:      param.Limit,
+	}, nil
+}
+
 func (r *RoomRepository) Recover(ctx context.Context, id int) (*domain.Room, error) {
 	rows, err := r.db.Query(ctx,
 		`UPDATE rooms

@@ -108,6 +108,23 @@ func (s *RoomService) Get(ctx context.Context, param *domain.PaginateRequest) (*
 	}, nil
 }
 
+func (s *RoomService) GetByCursor(ctx context.Context, param *domain.CursorPaginateRequest) (*domain.RoomCursorPaginateDto, error) {
+	result, pagination, err := s.repo.GetByCursor(ctx, param)
+	if err != nil {
+		return nil, domain.NewInternalError(err.Error())
+	}
+
+	rooms := make([]*domain.RoomDto, 0, len(result))
+	for _, val := range result {
+		rooms = append(rooms, domain.ToRoomDto(val))
+	}
+
+	return &domain.RoomCursorPaginateDto{
+		Data:       rooms,
+		Pagination: pagination,
+	}, nil
+}
+
 func (s *RoomService) Recover(ctx context.Context, id int) (*domain.RoomDto, error) {
 	room, err := s.repo.GetById(ctx, id)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {

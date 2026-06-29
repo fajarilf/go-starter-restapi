@@ -99,6 +99,27 @@ func (h *RoomHandler) Get(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+func (h *RoomHandler) GetByCursor(w http.ResponseWriter, r *http.Request) error {
+	q := r.URL.Query()
+	param := domain.CursorPaginateRequest{
+		Cursor: queryInt(q, "cursor", 0),
+		Limit:  queryInt(q, "limit", 10),
+	}
+
+	// When cursor is 0 (first page), use MaxInt so all rows qualify for id < $1
+	if param.Cursor == 0 {
+		param.Cursor = 1<<31 - 1
+	}
+
+	rooms, err := h.service.GetByCursor(r.Context(), &param)
+	if err != nil {
+		return err
+	}
+
+	writeCursorPaginate(w, http.StatusOK, rooms.Data, rooms.Pagination)
+	return nil
+}
+
 func (h *RoomHandler) Recover(w http.ResponseWriter, r *http.Request) error {
 	id, err := roomID(r)
 	if err != nil {

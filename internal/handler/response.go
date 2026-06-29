@@ -41,6 +41,14 @@ func writePaginate[T any](w http.ResponseWriter, status int, data []T, paginatio
 	})
 }
 
+func writeCursorPaginate[T any](w http.ResponseWriter, status int, data []T, pagination domain.CursorPagination) {
+	writeJSON(w, status, domain.CursorPaginateResponse[T]{
+		Status:     status,
+		Data:       data,
+		Pagination: pagination,
+	})
+}
+
 func writeSuccess[T any](w http.ResponseWriter, status int, data T) {
 	writeJSON(w, status, domain.SuccessResponse[T]{
 		Status: status,

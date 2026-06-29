@@ -25,6 +25,18 @@ type PaginateResponse[T any] struct {
 	Pagination Pagination `json:"pagination"`
 }
 
+type CursorPagination struct {
+	NextCursor *int `json:"next_cursor"`
+	HasNext    bool `json:"has_next"`
+	Limit      int  `json:"limit"`
+}
+
+type CursorPaginateResponse[T any] struct {
+	Status     int              `json:"status"`
+	Data       []T              `json:"data"`
+	Pagination CursorPagination `json:"pagination"`
+}
+
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
