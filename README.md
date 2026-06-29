@@ -95,6 +95,7 @@ Base path: `/api`. Interactive docs are served from the running app:
 | `POST`   | `/api/login`              | Login, returns JWT token |
 | `POST`   | `/api/logout`             | 🔒 Revoke current JWT token |
 | `GET`    | `/api/rooms`              | List rooms (paginated via `?page=&limit=`) |
+| `GET`    | `/api/rooms/cursor`       | List rooms (cursor pagination via `?cursor=&limit=`) |
 | `POST`   | `/api/rooms`              | Create a room |
 | `GET`    | `/api/rooms/{id}`         | Get a room by ID |
 | `PUT`    | `/api/rooms/{id}`         | Update a room |
@@ -149,6 +150,17 @@ List responses add pagination metadata:
   "data": [ { "id": 1, "name": "Room A", "description": "..." } ],
   "pagination": { "page": 1, "limit": 10, "total_pages": 5, "total": 42, "has_prev": false, "has_next": true }
 }
+```
+
+Cursor-paginated list responses:
+
+```json
+{
+  "status": 200,
+  "data": [ { "id": 10, "name": "Room A", "description": "..." } ],
+  "pagination": { "next_cursor": 5, "has_next": true, "limit": 10 }
+}
+```
 ```
 
 Errors return:

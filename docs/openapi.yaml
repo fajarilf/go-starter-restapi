@@ -34,6 +34,8 @@ paths:
                 example: ok
   /api/rooms:
     $ref: "./room_docs.yaml#/room"
+  /api/rooms/cursor:
+    $ref: "./room_docs.yaml#/room-cursor"
   /api/rooms/{id}:
     $ref: "./room_docs.yaml#/room-by-id"
   /api/login:
@@ -253,6 +255,39 @@ components:
             $ref: "#/components/schemas/Room"
         pagination:
           $ref: "#/components/schemas/Pagination"
+
+    CursorPagination:
+      type: object
+      description: Cursor pagination metadata for list responses.
+      properties:
+        next_cursor:
+          type: integer
+          nullable: true
+          description: Cursor for the next page. Null when no more pages.
+          example: 35
+        has_next:
+          type: boolean
+          description: Whether more items exist beyond this page.
+          example: true
+        limit:
+          type: integer
+          description: Number of items requested per page.
+          example: 10
+
+    RoomCursorListResponse:
+      type: object
+      description: Success envelope wrapping a cursor-paginated list of rooms.
+      properties:
+        status:
+          type: integer
+          description: Mirrors the HTTP status code.
+          example: 200
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Room"
+        pagination:
+          $ref: "#/components/schemas/CursorPagination"
 
     RoomDeleteResponse:
       type: object

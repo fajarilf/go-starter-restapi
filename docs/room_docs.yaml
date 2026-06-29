@@ -123,6 +123,38 @@ room:
         "500":
           $ref: "./openapi.yaml#/components/responses/ServerError"
 
+room-cursor:
+  get:
+    tags: [Rooms]
+    summary: List rooms (cursor pagination)
+    operationId: listRoomsCursor
+    parameters:
+      - name: cursor
+        in: query
+        required: false
+        description: Room ID cursor. Omit for the first page (returns newest first).
+        schema:
+          type: integer
+          format: int32
+      - name: limit
+        in: query
+        required: false
+        description: Number of items per page. Defaults to 10.
+        schema:
+          type: integer
+          format: int32
+          minimum: 1
+          default: 10
+    responses:
+      "200":
+        description: Cursor-paginated list of rooms
+        content:
+          application/json:
+            schema:
+              $ref: "./openapi.yaml#/components/schemas/RoomCursorListResponse"
+      "500":
+        $ref: "./openapi.yaml#/components/responses/ServerError"
+
 room-by-id:
   get:
       tags: [Rooms]
