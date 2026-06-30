@@ -12,10 +12,12 @@ package handler_test
 // a throwaway DB, never a real one.
 
 import (
-	"bytes"
 	"encoding/json"
 	"net/http"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type roomData struct {
@@ -28,12 +30,8 @@ func TestHealthz(t *testing.T) {
 	ts, _ := setup(t)
 
 	status, raw := do(t, ts, http.MethodGet, "/api/healthz", "")
-	if status != http.StatusOK {
-		t.Fatalf("status = %d", status)
-	}
-	if string(raw) != "ok" {
-		t.Fatalf("body = %q, want ok", raw)
-	}
+	assert.Equal(t, http.StatusOK, status)
+	assert.Equal(t, "ok", string(raw))
 }
 
 func TestCreate(t *testing.T) {
@@ -41,12 +39,9 @@ func TestCreate(t *testing.T) {
 
 	t.Run("valid", func(t *testing.T) {
 		got := mustCreate(t, ts, "Conference A", "Third floor")
-		if got.ID == 0 {
-			t.Errorf("id not assigned: %+v", got)
-		}
-		if got.Name != "Conference A" || got.Description != "Third floor" {
-			t.Errorf("unexpected data: %+v", got)
-		}
+		assert.NotZero(t, got.ID, "id not assigned")
+		assert.Equal(t, "Conference A", got.Name)
+		assert.Equal(t, "Third floor", got.Description)
 	})
 
 	bad := []struct {
@@ -64,10 +59,8 @@ func TestCreate(t *testing.T) {
 	}
 	for _, tc := range bad {
 		t.Run(tc.name, func(t *testing.T) {
-			status, raw := do(t, ts, http.MethodPost, "/api/rooms", tc.body)
-			if status != http.StatusBadRequest {
-				t.Errorf("status = %d, want 400 (body %s)", status, raw)
-			}
+			status, _ := do(t, ts, http.MethodPost, "/api/rooms", tc.body)
+			assert.Equal(t, http.StatusBadRequest, status, "body: %s", tc.body)
 		})
 	}
 }
@@ -78,30 +71,22 @@ func TestGetById(t *testing.T) {
 
 	t.Run("found", func(t *testing.T) {
 		status, raw := do(t, ts, http.MethodGet, path(created.ID), "")
-		if status != http.StatusOK {
-			t.Fatalf("status = %d (body %s)", status, raw)
-		}
+		require.Equal(t, http.StatusOK, status)
+
 		var got successResp
-		if err := json.Unmarshal(raw, &got); err != nil {
-			t.Fatalf("unmarshal: %v", err)
-		}
-		if got.Data.ID != created.ID || got.Data.Name != "Room A" {
-			t.Errorf("unexpected: %+v", got.Data)
-		}
+		require.NoError(t, json.Unmarshal(raw, &got))
+		assert.Equal(t, created.ID, got.Data.ID)
+		assert.Equal(t, "Room A", got.Data.Name)
 	})
 
 	t.Run("not found", func(t *testing.T) {
 		status, _ := do(t, ts, http.MethodGet, "/api/rooms/999999", "")
-		if status != http.StatusNotFound {
-			t.Errorf("status = %d, want 404", status)
-		}
+		assert.Equal(t, http.StatusNotFound, status)
 	})
 
 	t.Run("non-numeric id", func(t *testing.T) {
 		status, _ := do(t, ts, http.MethodGet, "/api/rooms/abc", "")
-		if status != http.StatusBadRequest {
-			t.Errorf("status = %d, want 400", status)
-		}
+		assert.Equal(t, http.StatusBadRequest, status)
 	})
 }
 
@@ -112,47 +97,35 @@ func TestUpdate(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
 		status, raw := do(t, ts, http.MethodPut, path(created.ID),
 			`{"name":"New Name","description":"new desc"}`)
-		if status != http.StatusOK {
-			t.Fatalf("status = %d (body %s)", status, raw)
-		}
+		require.Equal(t, http.StatusOK, status)
+
 		var got successResp
-		if err := json.Unmarshal(raw, &got); err != nil {
-			t.Fatalf("unmarshal: %v", err)
-		}
-		if got.Data.Name != "New Name" || got.Data.Description != "new desc" {
-			t.Errorf("not updated: %+v", got.Data)
-		}
+		require.NoError(t, json.Unmarshal(raw, &got))
+		assert.Equal(t, "New Name", got.Data.Name)
+		assert.Equal(t, "new desc", got.Data.Description)
 	})
 
 	t.Run("not found", func(t *testing.T) {
 		status, _ := do(t, ts, http.MethodPut, "/api/rooms/999999",
 			`{"name":"Whatever","description":"x"}`)
-		if status != http.StatusNotFound {
-			t.Errorf("status = %d, want 404", status)
-		}
+		assert.Equal(t, http.StatusNotFound, status)
 	})
 
 	t.Run("non-numeric id", func(t *testing.T) {
 		status, _ := do(t, ts, http.MethodPut, "/api/rooms/abc",
 			`{"name":"Whatever","description":"x"}`)
-		if status != http.StatusBadRequest {
-			t.Errorf("status = %d, want 400", status)
-		}
+		assert.Equal(t, http.StatusBadRequest, status)
 	})
 
 	t.Run("validation fail", func(t *testing.T) {
 		status, _ := do(t, ts, http.MethodPut, path(created.ID),
 			`{"name":"ab","description":"x"}`)
-		if status != http.StatusBadRequest {
-			t.Errorf("status = %d, want 400", status)
-		}
+		assert.Equal(t, http.StatusBadRequest, status)
 	})
 
 	t.Run("malformed json", func(t *testing.T) {
 		status, _ := do(t, ts, http.MethodPut, path(created.ID), `{`)
-		if status != http.StatusBadRequest {
-			t.Errorf("status = %d, want 400", status)
-		}
+		assert.Equal(t, http.StatusBadRequest, status)
 	})
 }
 
@@ -162,31 +135,22 @@ func TestDelete(t *testing.T) {
 
 	t.Run("existing", func(t *testing.T) {
 		status, raw := do(t, ts, http.MethodDelete, path(created.ID), "")
-		if status != http.StatusOK {
-			t.Fatalf("status = %d (body %s)", status, raw)
-		}
-		if !bytes.Contains(raw, []byte("room deleted")) {
-			t.Errorf("body = %s, want message", raw)
-		}
+		require.Equal(t, http.StatusOK, status)
+		assert.Contains(t, string(raw), "room deleted")
+
 		// gone afterwards
 		status, _ = do(t, ts, http.MethodGet, path(created.ID), "")
-		if status != http.StatusNotFound {
-			t.Errorf("after delete status = %d, want 404", status)
-		}
+		assert.Equal(t, http.StatusNotFound, status)
 	})
 
 	t.Run("not found", func(t *testing.T) {
 		status, _ := do(t, ts, http.MethodDelete, "/api/rooms/999999", "")
-		if status != http.StatusNotFound {
-			t.Errorf("status = %d, want 404", status)
-		}
+		assert.Equal(t, http.StatusNotFound, status)
 	})
 
 	t.Run("non-numeric id", func(t *testing.T) {
 		status, _ := do(t, ts, http.MethodDelete, "/api/rooms/abc", "")
-		if status != http.StatusBadRequest {
-			t.Errorf("status = %d, want 400", status)
-		}
+		assert.Equal(t, http.StatusBadRequest, status)
 	})
 }
 
@@ -194,19 +158,14 @@ func TestList(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		ts, _ := setup(t)
 		status, raw := do(t, ts, http.MethodGet, "/api/rooms", "")
-		if status != http.StatusOK {
-			t.Fatalf("status = %d (body %s)", status, raw)
-		}
+		require.Equal(t, http.StatusOK, status)
+
 		var got listResp
-		if err := json.Unmarshal(raw, &got); err != nil {
-			t.Fatalf("unmarshal: %v", err)
-		}
-		if len(got.Data) != 0 || got.Pagination.Total != 0 {
-			t.Errorf("expected empty, got %+v", got)
-		}
-		if got.Pagination.HasPrev || got.Pagination.HasNext {
-			t.Errorf("expected no prev/next, got %+v", got.Pagination)
-		}
+		require.NoError(t, json.Unmarshal(raw, &got))
+		assert.Empty(t, got.Data)
+		assert.Zero(t, got.Pagination.Total)
+		assert.False(t, got.Pagination.HasPrev)
+		assert.False(t, got.Pagination.HasNext)
 	})
 
 	t.Run("pagination", func(t *testing.T) {
@@ -217,31 +176,23 @@ func TestList(t *testing.T) {
 
 		// page 1, limit 2 -> 2 items, has_next true, has_prev false, 3 pages
 		status, raw := do(t, ts, http.MethodGet, "/api/rooms?page=1&limit=2", "")
-		if status != http.StatusOK {
-			t.Fatalf("status = %d (body %s)", status, raw)
-		}
+		require.Equal(t, http.StatusOK, status)
+
 		var p1 listResp
-		json.Unmarshal(raw, &p1)
-		if len(p1.Data) != 2 {
-			t.Errorf("page1 len = %d, want 2", len(p1.Data))
-		}
-		if p1.Pagination.Total != 5 || p1.Pagination.TotalPages != 3 {
-			t.Errorf("page1 pagination = %+v, want total 5 pages 3", p1.Pagination)
-		}
-		if p1.Pagination.HasPrev || !p1.Pagination.HasNext {
-			t.Errorf("page1 prev/next = %+v", p1.Pagination)
-		}
+		require.NoError(t, json.Unmarshal(raw, &p1))
+		assert.Len(t, p1.Data, 2)
+		assert.Equal(t, 5, p1.Pagination.Total)
+		assert.Equal(t, 3, p1.Pagination.TotalPages)
+		assert.False(t, p1.Pagination.HasPrev)
+		assert.True(t, p1.Pagination.HasNext)
 
 		// last page -> 1 item, has_next false, has_prev true
 		_, raw = do(t, ts, http.MethodGet, "/api/rooms?page=3&limit=2", "")
 		var p3 listResp
-		json.Unmarshal(raw, &p3)
-		if len(p3.Data) != 1 {
-			t.Errorf("page3 len = %d, want 1", len(p3.Data))
-		}
-		if !p3.Pagination.HasPrev || p3.Pagination.HasNext {
-			t.Errorf("page3 prev/next = %+v", p3.Pagination)
-		}
+		require.NoError(t, json.Unmarshal(raw, &p3))
+		assert.Len(t, p3.Data, 1)
+		assert.True(t, p3.Pagination.HasPrev)
+		assert.False(t, p3.Pagination.HasNext)
 	})
 
 	t.Run("invalid query falls back to defaults", func(t *testing.T) {
@@ -250,10 +201,9 @@ func TestList(t *testing.T) {
 
 		_, raw := do(t, ts, http.MethodGet, "/api/rooms?page=abc&limit=-5", "")
 		var got listResp
-		json.Unmarshal(raw, &got)
-		if got.Pagination.Page != 1 || got.Pagination.Limit != 10 {
-			t.Errorf("expected defaults page1 limit10, got %+v", got.Pagination)
-		}
+		require.NoError(t, json.Unmarshal(raw, &got))
+		assert.Equal(t, 1, got.Pagination.Page)
+		assert.Equal(t, 10, got.Pagination.Limit)
 	})
 }
 
@@ -264,47 +214,35 @@ func TestRecover(t *testing.T) {
 	t.Run("soft-deleted is recovered", func(t *testing.T) {
 		created := mustCreate(t, ts, "Recover Me", "desc")
 
-		if status, raw := do(t, ts, http.MethodDelete, path(created.ID), ""); status != http.StatusOK {
-			t.Fatalf("delete status = %d (body %s)", status, raw)
-		}
+		status, _ := do(t, ts, http.MethodDelete, path(created.ID), "")
+		require.Equal(t, http.StatusOK, status)
 
 		status, raw := doReq(t, ts, http.MethodPost, path(created.ID)+"/recover", "", token)
-		if status != http.StatusOK {
-			t.Fatalf("recover status = %d (body %s)", status, raw)
-		}
-		var got successResp
-		if err := json.Unmarshal(raw, &got); err != nil {
-			t.Fatalf("unmarshal: %v", err)
-		}
-		if got.Data.ID != created.ID || got.Data.Name != "Recover Me" {
-			t.Errorf("unexpected: %+v", got.Data)
-		}
+		require.Equal(t, http.StatusOK, status)
 
-		if status, _ := do(t, ts, http.MethodGet, path(created.ID), ""); status != http.StatusOK {
-			t.Errorf("after recover GET status = %d, want 200", status)
-		}
+		var got successResp
+		require.NoError(t, json.Unmarshal(raw, &got))
+		assert.Equal(t, created.ID, got.Data.ID)
+		assert.Equal(t, "Recover Me", got.Data.Name)
+
+		status, _ = do(t, ts, http.MethodGet, path(created.ID), "")
+		assert.Equal(t, http.StatusOK, status)
 	})
 
 	t.Run("already active is conflict", func(t *testing.T) {
 		created := mustCreate(t, ts, "Still Active", "desc")
 
 		status, _ := doReq(t, ts, http.MethodPost, path(created.ID)+"/recover", "", token)
-		if status != http.StatusConflict {
-			t.Errorf("status = %d, want 409", status)
-		}
+		assert.Equal(t, http.StatusConflict, status)
 	})
 
 	t.Run("not found", func(t *testing.T) {
 		status, _ := doReq(t, ts, http.MethodPost, "/api/rooms/999999/recover", "", token)
-		if status != http.StatusNotFound {
-			t.Errorf("status = %d, want 404", status)
-		}
+		assert.Equal(t, http.StatusNotFound, status)
 	})
 
 	t.Run("non-numeric id", func(t *testing.T) {
 		status, _ := doReq(t, ts, http.MethodPost, "/api/rooms/abc/recover", "", token)
-		if status != http.StatusBadRequest {
-			t.Errorf("status = %d, want 400", status)
-		}
+		assert.Equal(t, http.StatusBadRequest, status)
 	})
 }

@@ -17,6 +17,7 @@ example.
 | Config         | [`caarlos0/env`](https://github.com/caarlos0/env) + [`joho/godotenv`](https://github.com/joho/godotenv) |
 | API docs       | [`swaggo/http-swagger`](https://github.com/swaggo/http-swagger) (Swagger UI) |
 | Logging        | `log/slog` (JSON) |
+| Testing        | [`stretchr/testify`](https://github.com/stretchr/testify) |
 
 Requires **Go 1.25+** and a **PostgreSQL** database.
 
@@ -161,7 +162,6 @@ Cursor-paginated list responses:
   "pagination": { "next_cursor": 5, "has_next": true, "limit": 10 }
 }
 ```
-```
 
 Errors return:
 
@@ -185,7 +185,7 @@ curl -X POST http://localhost:8080/api/rooms \
 
 ## Testing
 
-Integration tests in `internal/handler` drive the real router → handler → service
+Integration tests in `internal/handler` use [`testify`](https://github.com/stretchr/testify) for assertions and drive the real router → handler → service
 → repository → pgx stack via `httptest` against a real Postgres. They read
 `TEST_DATABASE_URL` and **skip** when it is unset, so `go test ./...` stays green
 without a database.
