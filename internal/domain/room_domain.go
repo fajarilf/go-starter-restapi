@@ -1,17 +1,18 @@
 package domain
 
 import (
-	"database/sql"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Room struct {
-	Id          int          `db:"id"`
-	Name        string       `db:"name"`
-	Description string       `db:"description"`
-	CreatedAt   time.Time    `db:"created_at"`
-	UpdatedAt   sql.NullTime `db:"updated_at"`
-	DeletedAt   sql.NullTime `db:"deleted_at"`
+	Id          int            `gorm:"column:id;primaryKey;autoIncrement"`
+	Name        string         `gorm:"column:name"`
+	Description string         `gorm:"column:description"`
+	CreatedAt   time.Time      `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt   *time.Time     `gorm:"column:updated_at;autoUpdateTime"`
+	DeletedAt   gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 type RoomDto struct {

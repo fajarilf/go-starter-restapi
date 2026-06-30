@@ -13,9 +13,9 @@ type RegisterResponse struct {
 }
 
 type User struct {
-	ID           int    `db:"id"`
-	Username     string `db:"username"`
-	PasswordHash string `db:"password_hash"`
+	ID           int    `gorm:"column:id;primaryKey;autoIncrement"`
+	Username     string `gorm:"column:username"`
+	PasswordHash string `gorm:"column:password_hash"`
 }
 
 type LoginRequest struct {

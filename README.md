@@ -1,7 +1,7 @@
 # go-starter-restapi
 
 A small, batteries-included starter for building REST APIs in Go. It ships with a
-layered architecture (handler → service → repository), Postgres access via `pgx`,
+layered architecture (handler → service → repository), Postgres access via `GORM`,
 embedded SQL migrations, request validation, structured logging, graceful
 shutdown, and interactive OpenAPI docs — using a `rooms` resource as a worked
 example.
@@ -11,7 +11,7 @@ example.
 | Concern        | Library |
 | -------------- | ------- |
 | Router         | [`go-chi/chi`](https://github.com/go-chi/chi) |
-| Database       | [`jackc/pgx`](https://github.com/jackc/pgx) (v5, with `pgxpool`) |
+| Database       | [`GORM`](https://gorm.io) (with postgres driver) |
 | Migrations     | [`golang-migrate`](https://github.com/golang-migrate/migrate) (embedded sources) |
 | Validation     | [`go-playground/validator`](https://github.com/go-playground/validator) |
 | Config         | [`caarlos0/env`](https://github.com/caarlos0/env) + [`joho/godotenv`](https://github.com/joho/godotenv) |
@@ -32,7 +32,7 @@ internal/
   config/      environment config loading & validation
   domain/      entities, DTOs, response envelopes, typed errors
   handler/     HTTP handlers + JSON response helpers
-  repository/  data access (pgx) + migrator wiring
+  repository/  data access (GORM) + migrator wiring
   server/      router, middleware, server lifecycle
   service/     business logic
 migrations/    embedded SQL migrations (*.sql)
@@ -186,7 +186,7 @@ curl -X POST http://localhost:8080/api/rooms \
 ## Testing
 
 Integration tests in `internal/handler` use [`testify`](https://github.com/stretchr/testify) for assertions and drive the real router → handler → service
-→ repository → pgx stack via `httptest` against a real Postgres. They read
+→ repository → GORM stack via `httptest` against a real Postgres. They read
 `TEST_DATABASE_URL` and **skip** when it is unset, so `go test ./...` stays green
 without a database.
 
@@ -217,7 +217,7 @@ This project is meant to be copied and extended. To add a resource, mirror the
 `rooms` example across the layers:
 
 1. `internal/domain` — entity + DTOs.
-2. `internal/repository` — interface + pgx implementation.
+2. `internal/repository` — interface + GORM implementation.
 3. `internal/service` — business logic.
 4. `internal/handler` — HTTP handlers.
 5. `internal/server/routes.go` — register routes.

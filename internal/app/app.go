@@ -9,37 +9,47 @@ import (
 	"github.com/fajarilf/go-starter-api/internal/server"
 	"github.com/fajarilf/go-starter-api/internal/service"
 	"github.com/go-playground/validator/v10"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 type App struct {
 	Server *server.Server
-	pool   *pgxpool.Pool
+	db     *gorm.DB
 }
 
 func NewApp(ctx context.Context, cfg config.Config) (*App, error) {
-	pool, err := pgxpool.New(ctx, cfg.DatabaseURL)
+	db, err := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
 
-	if err := pool.Ping(ctx); err != nil {
-		pool.Close()
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := sqlDB.PingContext(ctx); err != nil {
+		sqlDB.Close()
 		return nil, err
 	}
 
 	v := validator.New()
 
-	roomRepo := repository.NewRoomRepository(pool)
+	roomRepo := repository.NewRoomRepository(db)
 	roomService := service.NewRoomService(roomRepo, v)
 	roomHandler := handler.NewRoomHandler(roomService)
 
-	userRepo := repository.NewUserRepository(pool)
+	userRepo := repository.NewUserRepository(db)
 	authService := service.NewAuthService(userRepo, v, cfg)
 	authHandler := handler.NewAuthHandler(authService)
 
 	srv := server.New(cfg, roomHandler, authHandler, authService)
-	return &App{Server: srv, pool: pool}, nil
+	return &App{Server: srv, db: db}, nil
 }
 
-func (a *App) Close() { a.pool.Close() }
+func (a *App) Close() {
+	if sqlDB, err := a.db.DB(); err == nil {
+		sqlDB.Close()
+	}
+}

@@ -8,7 +8,7 @@ import (
 	"github.com/fajarilf/go-starter-api/internal/domain"
 	"github.com/fajarilf/go-starter-api/internal/repository"
 	"github.com/go-playground/validator/v10"
-	"github.com/jackc/pgx/v5"
+	"gorm.io/gorm"
 )
 
 type RoomService struct {
@@ -127,7 +127,7 @@ func (s *RoomService) GetByCursor(ctx context.Context, param *domain.CursorPagin
 
 func (s *RoomService) Recover(ctx context.Context, id int) (*domain.RoomDto, error) {
 	room, err := s.repo.GetById(ctx, id)
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, domain.NewInternalError(err.Error())
 	}
 

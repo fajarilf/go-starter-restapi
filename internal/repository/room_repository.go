@@ -2,148 +2,101 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/fajarilf/go-starter-api/internal/domain"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"gorm.io/gorm"
 )
 
 type RoomRepository struct {
-	db *pgxpool.Pool
+	db *gorm.DB
 }
 
 var _ RoomRepositoryInterface = (*RoomRepository)(nil)
 
-func NewRoomRepository(db *pgxpool.Pool) *RoomRepository {
+func NewRoomRepository(db *gorm.DB) *RoomRepository {
 	return &RoomRepository{
 		db: db,
 	}
 }
 
 func (r *RoomRepository) Create(ctx context.Context, entity *domain.Room) (*domain.Room, error) {
-	rows, err := r.db.Query(ctx,
-		`INSERT INTO rooms (name, description)
-		 VALUES ($1, $2)
-		 RETURNING *`,
-		entity.Name, entity.Description,
-	)
-	if err != nil {
+	if err := r.db.WithContext(ctx).Create(entity).Error; err != nil {
 		return nil, err
 	}
-
-	room, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[domain.Room])
-	if err != nil {
-		return nil, err
-	}
-
-	return room, nil
+	return entity, nil
 }
 
 func (r *RoomRepository) GetById(ctx context.Context, id int) (*domain.Room, error) {
-	rows, err := r.db.Query(ctx,
-		`SELECT id, name, description, created_at, updated_at, deleted_at
-		 FROM rooms WHERE id = $1 AND deleted_at IS NULL`,
-		id,
-	)
-	if err != nil {
+	var room domain.Room
+	if err := r.db.WithContext(ctx).First(&room, id).Error; err != nil {
 		return nil, err
 	}
-
-	room, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[domain.Room])
-	if err != nil {
-		return nil, err
-	}
-
-	return room, nil
+	return &room, nil
 }
 
 func (r *RoomRepository) Update(ctx context.Context, entity *domain.Room) (*domain.Room, error) {
-	rows, err := r.db.Query(ctx,
-		`UPDATE rooms
-		 SET name = $1, description = $2, updated_at = now()
-		 WHERE id = $3 AND deleted_at IS NULL
-		 RETURNING *`,
-		entity.Name, entity.Description, entity.Id,
-	)
-	if err != nil {
-		return nil, err
+	now := time.Now()
+	entity.UpdatedAt = &now
+	tx := r.db.WithContext(ctx).Model(&domain.Room{}).
+		Where("id = ? AND deleted_at IS NULL", entity.Id).
+		Updates(map[string]interface{}{
+			"name":        entity.Name,
+			"description": entity.Description,
+			"updated_at":  entity.UpdatedAt,
+		})
+	if tx.Error != nil {
+		return nil, tx.Error
 	}
-
-	room, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[domain.Room])
-	if err != nil {
-		return nil, err
+	if tx.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
 	}
-
-	return room, nil
+	return entity, nil
 }
 
 func (r *RoomRepository) Delete(ctx context.Context, id int) (int64, error) {
-	tag, err := r.db.Exec(ctx,
-		`UPDATE rooms SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL`,
-		id,
-	)
-	if err != nil {
-		return tag.RowsAffected(), err
-	}
-
-	return tag.RowsAffected(), nil
+	tx := r.db.WithContext(ctx).Delete(&domain.Room{}, id)
+	return tx.RowsAffected, tx.Error
 }
 
 func (r *RoomRepository) Get(ctx context.Context, param *domain.PaginateRequest) ([]*domain.Room, domain.Pagination, error) {
+	var total int64
+	if err := r.db.WithContext(ctx).Model(&domain.Room{}).Count(&total).Error; err != nil {
+		return nil, domain.Pagination{}, err
+	}
+
 	offset := (param.Page - 1) * param.Limit
-
-	var total int
-	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM rooms WHERE deleted_at IS NULL`).Scan(&total); err != nil {
+	var rooms []*domain.Room
+	if err := r.db.WithContext(ctx).
+		Order("created_at DESC").
+		Offset(offset).Limit(param.Limit).
+		Find(&rooms).Error; err != nil {
 		return nil, domain.Pagination{}, err
 	}
 
-	rows, err := r.db.Query(ctx,
-		`SELECT id, name, description, created_at, updated_at, deleted_at
-		 FROM rooms
-		 WHERE deleted_at IS NULL
-		 ORDER BY created_at DESC
-		 LIMIT $1 OFFSET $2`,
-		param.Limit, offset,
-	)
-	if err != nil {
-		return nil, domain.Pagination{}, err
-	}
-
-	rooms, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[domain.Room])
-	if err != nil {
-		return nil, domain.Pagination{}, err
-	}
-
+	t := int(total)
 	totalPages := 0
 	if param.Limit > 0 {
-		totalPages = (total + param.Limit - 1) / param.Limit // ceil(total / limit)
+		totalPages = (t + param.Limit - 1) / param.Limit
 	}
 
 	return rooms, domain.Pagination{
 		Page:       param.Page,
 		Limit:      param.Limit,
 		TotalPages: totalPages,
-		Total:      total,
+		Total:      t,
 		HasPrev:    param.Page > 1,
 		HasNext:    param.Page < totalPages,
 	}, nil
 }
 
 func (r *RoomRepository) GetByCursor(ctx context.Context, param *domain.CursorPaginateRequest) ([]*domain.Room, domain.CursorPagination, error) {
-	rows, err := r.db.Query(ctx,
-		`SELECT id, name, description, created_at, updated_at, deleted_at
-		 FROM rooms
-		 WHERE deleted_at IS NULL AND id < $1
-		 ORDER BY id DESC
-		 LIMIT $2`,
-		param.Cursor, param.Limit+1,
-	)
-	if err != nil {
-		return nil, domain.CursorPagination{}, err
-	}
-
-	rooms, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[domain.Room])
-	if err != nil {
+	var rooms []*domain.Room
+	if err := r.db.WithContext(ctx).
+		Where("id < ?", param.Cursor).
+		Order("id DESC").
+		Limit(param.Limit + 1).
+		Find(&rooms).Error; err != nil {
 		return nil, domain.CursorPagination{}, err
 	}
 
@@ -166,21 +119,13 @@ func (r *RoomRepository) GetByCursor(ctx context.Context, param *domain.CursorPa
 }
 
 func (r *RoomRepository) Recover(ctx context.Context, id int) (*domain.Room, error) {
-	rows, err := r.db.Query(ctx,
-		`UPDATE rooms
-		 SET deleted_at = NULL, updated_at = now()
-		 WHERE id = $1
-		 RETURNING *`,
-		id,
-	)
-	if err != nil {
+	var room domain.Room
+	if err := r.db.WithContext(ctx).Unscoped().First(&room, id).Error; err != nil {
 		return nil, err
 	}
-
-	room, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[domain.Room])
-	if err != nil {
+	room.DeletedAt = gorm.DeletedAt{}
+	if err := r.db.WithContext(ctx).Unscoped().Save(&room).Error; err != nil {
 		return nil, err
 	}
-
-	return room, nil
+	return &room, nil
 }

@@ -12,9 +12,9 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 // ponytail: in-memory blacklist, lost on restart. Replace with Redis/DB table
@@ -67,7 +67,7 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (str
 
 	user, err := s.userRepo.FindByUsername(ctx, username)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return "", domain.ErrInvalidCredentials
 		}
 		return "", domain.NewInternalError(err.Error())

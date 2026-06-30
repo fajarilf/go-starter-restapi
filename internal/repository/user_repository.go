@@ -4,50 +4,31 @@ import (
 	"context"
 
 	"github.com/fajarilf/go-starter-api/internal/domain"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"gorm.io/gorm"
 )
 
 type UserRepository struct {
-	db *pgxpool.Pool
+	db *gorm.DB
 }
 
 var _ UserRepositoryInterface = (*UserRepository)(nil)
 
-func NewUserRepository(db *pgxpool.Pool) *UserRepository {
+func NewUserRepository(db *gorm.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
 func (r *UserRepository) FindByUsername(ctx context.Context, username string) (*domain.User, error) {
-	rows, err := r.db.Query(ctx,
-		`SELECT id, username, password_hash FROM users WHERE username = $1`,
-		username,
-	)
-	if err != nil {
+	var user domain.User
+	if err := r.db.WithContext(ctx).Where("username = ?", username).First(&user).Error; err != nil {
 		return nil, err
 	}
-
-	user, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[domain.User])
-	if err != nil {
-		return nil, err
-	}
-
-	return user, nil
+	return &user, nil
 }
 
 func (r *UserRepository) Create(ctx context.Context, username, passwordHash string) (*domain.User, error) {
-	rows, err := r.db.Query(ctx,
-		`INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username, password_hash`,
-		username, passwordHash,
-	)
-	if err != nil {
+	user := domain.User{Username: username, PasswordHash: passwordHash}
+	if err := r.db.WithContext(ctx).Create(&user).Error; err != nil {
 		return nil, err
 	}
-
-	user, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[domain.User])
-	if err != nil {
-		return nil, err
-	}
-
-	return user, nil
+	return &user, nil
 }

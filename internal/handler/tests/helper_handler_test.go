@@ -19,8 +19,9 @@ import (
 	"github.com/fajarilf/go-starter-api/internal/server"
 	"github.com/fajarilf/go-starter-api/internal/service"
 	"github.com/go-playground/validator/v10"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 type successResp struct {
@@ -36,7 +37,7 @@ type listResp struct {
 
 // setup spins up an httptest server wired to a freshly-truncated test DB.
 // It skips the whole test when TEST_DATABASE_URL is not set.
-func setup(t *testing.T) (*httptest.Server, *pgxpool.Pool) {
+func setup(t *testing.T) (*httptest.Server, *gorm.DB) {
 	loadEnv() // go test cwd is the package dir; .env lives at the project root
 
 	t.Helper()
@@ -50,23 +51,28 @@ func setup(t *testing.T) (*httptest.Server, *pgxpool.Pool) {
 		t.Fatalf("migrate: %v", err)
 	}
 
-	pool, err := pgxpool.New(context.Background(), dbURL)
+	db, err := gorm.Open(postgres.Open(dbURL), &gorm.Config{})
 	if err != nil {
-		t.Fatalf("pool: %v", err)
+		t.Fatalf("gorm open: %v", err)
 	}
 
-	if _, err := pool.Exec(context.Background(), "TRUNCATE rooms, users RESTART IDENTITY CASCADE"); err != nil {
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("get sql.DB: %v", err)
+	}
+
+	if _, err := sqlDB.ExecContext(context.Background(), "TRUNCATE rooms, users RESTART IDENTITY CASCADE"); err != nil {
 		t.Fatalf("truncate: %v", err)
 	}
-	if _, err := pool.Exec(context.Background(),
+	if _, err := sqlDB.ExecContext(context.Background(),
 		`INSERT INTO users (username, password_hash) VALUES ('admin', '$2a$10$3yQmNm0U93S.tWlm3nf7NuPki4JMX9ZN3zo.EE4hpbL.edqg57Cta')`); err != nil {
 		t.Fatalf("seed admin: %v", err)
 	}
 
-	repo := repository.NewRoomRepository(pool)
+	repo := repository.NewRoomRepository(db)
 	svc := service.NewRoomService(repo, validator.New())
 	h := handler.NewRoomHandler(svc)
-	userRepo := repository.NewUserRepository(pool)
+	userRepo := repository.NewUserRepository(db)
 	authSvc := service.NewAuthService(userRepo, validator.New(), config.Config{JWTSecret: "test-secret", JWTExpiryHours: 1})
 	authH := handler.NewAuthHandler(authSvc)
 	srv := server.New(config.Config{Port: "0"}, h, authH, authSvc)
@@ -74,10 +80,10 @@ func setup(t *testing.T) (*httptest.Server, *pgxpool.Pool) {
 	ts := httptest.NewServer(srv.Handler())
 	t.Cleanup(func() {
 		ts.Close()
-		pool.Close()
+		sqlDB.Close()
 	})
 
-	return ts, pool
+	return ts, db
 }
 
 // do performs an HTTP request and returns the status code and raw body.

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jackc/pgx/v5"
+	"gorm.io/gorm"
 )
 
 type Kind int
@@ -44,7 +44,7 @@ func NewConflictError(msg string) *AppError {
 
 func MapDBError(err error, message string) error {
 	switch {
-	case errors.Is(err, pgx.ErrNoRows):
+	case errors.Is(err, gorm.ErrRecordNotFound):
 		return NewNotFoundError(message)
 	default:
 		internalMsg := fmt.Sprintf("internal server error: %v", err.Error())
