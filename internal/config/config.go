@@ -13,7 +13,8 @@ type Config struct {
 	DBMaxConns     int32         `env:"DB_MAX_CONNS" envDefault:"10"`
 	DBIdleMaxTime  time.Duration `env:"DB_MAX_IDLE_TIME" envDefault:"15m"`
 	Environment    string        `env:"ENVIRONMENT" envDefault:"development"`
-	LogLevel       string        `env:"LOG_LEVEL" envDefault:"info"`
+	LogLevel       string        `env:"LOG_LEVEL"`
+	LogDir         string        `env:"LOG_DIR" envDefault:"./logs"`
 	AllowedOrigins []string      `env:"ALLOWED_ORIGINS" envDefault:"*"`
 	JWTSecret      string        `env:"JWT_SECRET,required"`
 	JWTExpiryHours int           `env:"JWT_EXPIRY_HOURS" envDefault:"24"`
@@ -28,7 +29,7 @@ func (c Config) Validate() error {
 	}
 
 	switch c.LogLevel {
-	case "debug", "info", "warn", "error":
+	case "", "debug", "info", "warn", "error":
 		// ok
 	default:
 		return fmt.Errorf("LOG_LEVEL must be debug, info, warn, or error, got %q", c.LogLevel)

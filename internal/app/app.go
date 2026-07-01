@@ -2,9 +2,11 @@ package app
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/fajarilf/go-starter-api/internal/config"
 	"github.com/fajarilf/go-starter-api/internal/handler"
+	"github.com/fajarilf/go-starter-api/internal/logger"
 	"github.com/fajarilf/go-starter-api/internal/repository"
 	"github.com/fajarilf/go-starter-api/internal/server"
 	"github.com/fajarilf/go-starter-api/internal/service"
@@ -19,6 +21,12 @@ type App struct {
 }
 
 func NewApp(ctx context.Context, cfg config.Config) (*App, error) {
+	log, err := logger.Setup(cfg.Environment, cfg.LogLevel, cfg.LogDir)
+	if err != nil {
+		return nil, err
+	}
+	slog.SetDefault(log)
+
 	db, err := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
 	if err != nil {
 		return nil, err

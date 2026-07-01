@@ -58,7 +58,8 @@ cp .env.example .env
 | `DB_MAX_IDLE_TIME` | no       | `15m`         | Max connection idle time |
 | `ALLOWED_ORIGINS`  | no       | `*`           | Comma-separated CORS origins, e.g. `https://app.com,https://admin.app.com` |
 | `ENVIRONMENT`      | no       | `development` | `development` \| `staging` \| `production` |
-| `LOG_LEVEL`        | no       | `info`        | `debug` \| `info` \| `warn` \| `error` |
+| `LOG_LEVEL`        | no       | `info`        | `debug` \| `info` \| `warn` \| `error`. Defaults to `error` when `ENVIRONMENT=production` |
+| `LOG_DIR`          | no       | `./logs`      | Directory for log files (production only, logs rotate weekly) |
 | `JWT_SECRET`       | **yes**  | —             | Secret key for signing JWT tokens |
 | `JWT_EXPIRY_HOURS` | no       | `24`          | Token expiry time in hours |
 
